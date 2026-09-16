@@ -8,7 +8,11 @@ A bill tracker for two or more people who share a home, in a single HTML file.
 No build step, no server, no account, no dependencies, no telemetry. Open it in
 a browser and it works; bind it to a JSON file and your data is yours.
 
-**[Try it](https://thatsatechnique.github.io/household-bills/)** · it runs entirely in your browser, nothing is uploaded.
+**[Download index.html](https://github.com/thatsatechnique/household-bills/releases/latest/download/index.html)**
+and open it in a browser; that's the whole install. Or
+**[try it hosted](https://thatsatechnique.github.io/household-bills/)** first
+(nothing is uploaded either way) and download a copy from Settings → About
+when you're ready to keep it.
 
 ![Dashboard](docs/dashboard-light.png)
 
@@ -34,21 +38,25 @@ desktop notifications.
 
 ## Quick start
 
-Either use the hosted copy above, or keep it entirely local:
+Download `index.html` from the
+[latest release](https://github.com/thatsatechnique/household-bills/releases/latest)
+and open it: double-click it, drag it into a browser, or `open index.html` on
+macOS. Developers can `git clone` the repo instead; the app is the one file at
+the root either way.
 
-```
-git clone https://github.com/thatsatechnique/household-bills
-cd household-bills
-open index.html        # macOS — or double-click it, or drag it into a browser
-```
+The hosted copy is for trying it. Data lives per browser *and* per address, so
+if you start there and later move to your own file, bind a JSON file first (or
+Export) and reopen it from the local copy. Once bound, the local copy depends
+on nothing but that file.
 
 On first run it asks who shares the bills, then offers sample bills mapped onto
 those names or an empty start. Everything else lives under **Settings**.
 
 ![Welcome](docs/welcome.png)
 
-In Chrome or Edge you can install it as an app from the address bar; it then
-opens in its own window with the icon on your dock or home screen.
+Bind it to a JSON file straight away (**Settings → Data & backup → Save to a
+file…**). Browsers are less careful with `localStorage` for pages opened from
+disk than for websites, and the file is what makes your copy durable.
 
 ### Keeping your data
 

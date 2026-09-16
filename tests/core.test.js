@@ -219,8 +219,16 @@ run('core', async (t, browser) => {
   await page.waitForTimeout(200);
   t.ok('no horizontal overflow at 375px', (await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 1);
 
-  const manifest = await page.evaluate(() => JSON.parse(decodeURIComponent(document.querySelector('link[rel="manifest"]').href.split(',').slice(1).join(','))));
-  t.ok('manifest gains a start_url matching the page (Chrome install criterion)', manifest.start_url === page.url().split('#')[0] && /\/$/.test(manifest.scope) && manifest.icons.length === 2, JSON.stringify([manifest.start_url, manifest.scope]));
+  // --- no install manifest (a hosted copy is a demo, not the thing to install); About offers a download instead
+  t.ok('no web-app manifest', (await page.$('link[rel="manifest"]')) === null);
+  await page.setViewportSize({ width: 1200, height: 900 });
+  await openSettings(page, 'about');
+  t.ok('About names this a hosted copy', /hosted copy/.test(await page.textContent('#aboutCopy')));
+  t.ok('About links the repo', /github\.com\/thatsatechnique\/household-bills/.test(await page.getAttribute('#aboutRepo', 'href')));
+  const [copyDl] = await Promise.all([page.waitForEvent('download', { timeout: 5000 }), page.click('#aboutDownload')]);
+  const body = require('fs').readFileSync(await copyDl.path(), 'utf8');
+  t.ok('Download a copy saves index.html byte-for-byte', copyDl.suggestedFilename() === 'index.html' && body === require('fs').readFileSync(require('path').join(__dirname, '..', 'index.html'), 'utf8'), `${copyDl.suggestedFilename()} ${body.length}`);
+  await closeSettings(page);
   t.ok('no console errors', errs.length === 0, errs.join(' | '));
   await ctx.close();
 });
