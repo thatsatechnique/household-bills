@@ -46,6 +46,7 @@ run('onboarding-settings', async (t, browser) => {
   // --- C: first run with one person -> sample is all unsplit; Escape keeps the sample
   {
     const { ctx, page } = await openPage(browser, { clock: '2026-08-12T10:00:00', welcome: true });
+    t.ok('C welcome says nothing is sent anywhere', /Nothing you enter is sent anywhere/.test(await page.textContent('#welcomePrivacy')));
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     t.ok('C Escape dismisses and keeps the sample', !(await page.isVisible('#welcomeOverlay.open')) && (await page.evaluate(() => BB.state.bills.length)) === 9);
