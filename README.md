@@ -109,7 +109,10 @@ carries a sparkline per bill.
 ### Alerts
 
 Past-due and coming-up bills sit at the top of the dashboard with one-click
-**Mark paid**. Near the end of a month the window rolls into next month.
+**Mark paid**. Marking a bill paid, from a pill or the checklist checkbox,
+records the budgeted amount as that month's actual unless you've already
+entered one, so the reports fill in without extra typing. Near the end of a
+month the window rolls into next month.
 Desktop notifications fire once a day while the tab is open; there is no
 background push (it's a static file), so pin the tab.
 

@@ -32,7 +32,8 @@ writes, what Import JSON reads, what is mirrored to `localStorage` under
         { "personId": "sam",  "name": "Sam",  "percent": 40, "amount": 960.00 }
       ],
       "paidMonths": { "2026-08": true },          // paid checklist, keyed by month
-      "actuals":    { "2026-08": 2400.00 },       // what it actually cost that month
+      "actuals":    { "2026-08": 2400.00 },       // what it actually cost that month; marking
+                                                  // paid fills in totalAmount when nothing is recorded
       "fund": null                                // QUARTERLY/YEARLY only, see below
     }
   ]

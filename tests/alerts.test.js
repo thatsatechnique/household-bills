@@ -26,6 +26,7 @@ run('alerts', async (t, browser) => {
     await page.waitForTimeout(150);
     t.ok('A pill marks paid and the banner shrinks', /1 bill past due/.test(await page.textContent('.abar.od .abar-h')));
     t.ok('A checklist agrees', /^1 of 7 paid/.test(await page.textContent('#paidCounter')));
+    t.ok('A pill records the budgeted amount as the actual', (await page.evaluate(() => BB.state.bills.find(b => b.id === 'rent').actuals['2026-08'])) === 2400);
     t.ok('A no console errors', errs.length === 0, errs.join(' | '));
     await ctx.close();
   }
@@ -41,6 +42,8 @@ run('alerts', async (t, browser) => {
     await page.waitForTimeout(150);
     const pm = await page.evaluate(() => BB.state.bills.find(b => b.id === 'rent').paidMonths);
     t.ok('B marking it writes September, not August', pm['2026-09'] === true && pm['2026-08'] === undefined, JSON.stringify(pm));
+    const ac = await page.evaluate(() => BB.state.bills.find(b => b.id === 'rent').actuals);
+    t.ok('B the actual lands in September too', ac['2026-09'] === 2400 && ac['2026-08'] === undefined, JSON.stringify(ac));
     t.ok('B no console errors', errs.length === 0, errs.join(' | '));
     await ctx.close();
   }

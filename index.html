@@ -1944,6 +1944,20 @@ function renderBillTable(d){
   $("billTable").innerHTML = head + body + foot;
 }
 
+// Marking a bill paid records the budgeted amount as that month's actual when
+// nothing has been entered, so "paid" and "what it cost" agree by default.
+// Unmarking removes the actual only if it still equals that default.
+function setPaid(b, ym, on){
+  var dflt = round2(b.totalAmount);
+  if(on){
+    b.paidMonths[ym] = true;
+    if(b.actuals[ym] == null) b.actuals[ym] = dflt;
+  }else{
+    delete b.paidMonths[ym];
+    if(b.actuals[ym] === dflt) delete b.actuals[ym];
+  }
+}
+
 function setActual(billId, ym, raw){
   var b = state.bills.filter(function(x){ return x.id === billId; })[0];
   if(!b) return;
@@ -2581,7 +2595,7 @@ function init(){
     if(mk){
       var mb = state.bills.filter(function(x){ return x.id === mk.getAttribute("data-mark"); })[0];
       if(mb){
-        mb.paidMonths[mk.getAttribute("data-ym")] = true;
+        setPaid(mb, mk.getAttribute("data-ym"), true);
         save(); renderAll(); toast(mb.name + " marked paid");
       }
       return;
@@ -2607,7 +2621,7 @@ function init(){
     if(el.hasAttribute && el.hasAttribute("data-paid")){
       var b = state.bills.filter(function(x){ return x.id === el.getAttribute("data-paid"); })[0];
       if(!b) return;
-      if(el.checked) b.paidMonths[ym] = true; else delete b.paidMonths[ym];
+      setPaid(b, ym, el.checked);
       save(); renderChecklist(); renderBills(); renderAlerts(); renderFunds();
       return;
     }

@@ -60,8 +60,20 @@ run('core', async (t, browser) => {
   await page.waitForTimeout(150);
   t.ok('paid counter updates', /^1 of 7 paid/.test(await page.textContent('#paidCounter')), await page.textContent('#paidCounter'));
   t.ok('paidMonths written', (await page.evaluate(() => BB.state.bills.find(b => b.id === 'water').paidMonths['2026-08'])) === true);
+  t.ok('marking paid records the budgeted amount as the actual', (await page.evaluate(() => BB.state.bills.find(b => b.id === 'water').actuals['2026-08'])) === 60);
+  t.ok('actual field shows it', (await page.inputValue('#checklist input[data-actual="water"]')) === '60');
+  t.ok('counter reports the recorded actual', /1 actual recorded/.test(await page.textContent('#paidCounter')), await page.textContent('#paidCounter'));
   await page.reload(); await page.waitForTimeout(300);
   t.ok('paid state survives reload', /^1 of 7 paid/.test(await page.textContent('#paidCounter')));
+  // Unchecking drops a default actual; a typed one is kept.
+  await page.click('#checklist input[data-paid="water"]'); await page.waitForTimeout(150);
+  t.ok('unmarking removes the default actual', (await page.evaluate(() => BB.state.bills.find(b => b.id === 'water').actuals['2026-08'])) === undefined);
+  await page.fill('#checklist input[data-actual="water"]', '61.5'); await page.press('#checklist input[data-actual="water"]', 'Enter'); await page.waitForTimeout(200);
+  await page.click('#checklist input[data-paid="water"]'); await page.waitForTimeout(150);
+  t.ok('marking paid keeps a typed actual', (await page.evaluate(() => BB.state.bills.find(b => b.id === 'water').actuals['2026-08'])) === 61.5);
+  await page.click('#checklist input[data-paid="water"]'); await page.waitForTimeout(150);
+  t.ok('unmarking keeps a typed actual', (await page.evaluate(() => BB.state.bills.find(b => b.id === 'water').actuals['2026-08'])) === 61.5);
+  await page.click('#checklist input[data-paid="water"]'); await page.waitForTimeout(150);
   t.ok('past-due rows highlighted (Rent 1st, Pet 10th)', (await page.$$eval('#checklist .cl-row.overdue', e => e.length)) === 2);
 
   // --- split editor: percent validation
