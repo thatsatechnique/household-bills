@@ -2,11 +2,12 @@
 
 Everything the app knows lives in one JSON document. It is what Export JSON
 writes, what Import JSON reads, what is mirrored to `localStorage` under
-`billsBudgets.v1`, and what is written to the bound file when you use
+`householdBills.data`, and what is written to the bound file when you use
 "Save to a file…".
 
 ```jsonc
 {
+  "version": 1,             // data-format version; missing means 1
   "settings": {
     "leadDays": 3,          // alert window for "coming up"
     "notify": false,        // desktop notifications on/off
@@ -91,3 +92,14 @@ the remaining monthly contributions land exactly on the amount due.
 * **Accrual** basis spreads a quarterly or yearly actual back across the
   months it covers. Spill into the previous year is trimmed at January.
 * Months with no recorded actual are `null`, not `0`, and draw no bar.
+
+## Versioning and snapshots
+
+`version` is the data-format version, independent of the app version shown in
+Settings → About. The app loads any older format (missing fields get defaults)
+and warns if a file was written by a newer one. When the shape changes, bump
+`SCHEMA_VERSION` in `index.html` and add a migration block in `normalize()`.
+
+Snapshots are stored separately in `localStorage` under
+`householdBills.snapshots` as `[{ at, label, raw }]`, where `raw` is the full
+JSON document as a string. They are not part of the export.

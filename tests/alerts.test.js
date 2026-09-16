@@ -1,6 +1,6 @@
 // Alerts: due windows, month-end rollover, short months, badge, desktop notifications.
 'use strict';
-const { openPage, run, serve } = require('./_harness');
+const { openPage, run, serve, openSettings } = require('./_harness');
 
 run('alerts', async (t, browser) => {
   // --- A: mid-month. Rent (1st) and Pet Supplies (10th) are past due on the 12th; Internet (13th) is tomorrow.
@@ -13,7 +13,7 @@ run('alerts', async (t, browser) => {
     t.ok('A due soon (lead 3) = Internet tomorrow', JSON.stringify(soon) === JSON.stringify(['Internet:1']), soon.join(','));
     const h = (await page.textContent('.abar.od .abar-h')).replace(/\s+/g, ' ');
     t.ok('A past-due banner text', /2 bills past due/.test(h) && /\$2,450\.00 outstanding/.test(h), h.trim());
-    t.ok('A tab title badge', (await page.title()) === '(2) Bills & Budgets', await page.title());
+    t.ok('A tab title badge', (await page.title()) === '(2) Household Bills & Budgets', await page.title());
 
     await page.selectOption('#leadSel', '7');
     await page.waitForTimeout(120);
@@ -49,9 +49,9 @@ run('alerts', async (t, browser) => {
   {
     const { ctx, page, errs } = await openPage(browser, { clock: '2027-02-28T09:00:00' });
     await page.evaluate(() => {
-      const s = JSON.parse(localStorage.getItem('billsBudgets.v1'));
+      const s = JSON.parse(localStorage.getItem('householdBills.data'));
       s.bills.push({ id: 'eom', name: 'EOM Test', totalAmount: 80, period: 'MONTHLY', dueDay: 31, isActive: true, splits: null, paidMonths: {} });
-      localStorage.setItem('billsBudgets.v1', JSON.stringify(s));
+      localStorage.setItem('householdBills.data', JSON.stringify(s));
     });
     await page.reload(); await page.waitForTimeout(300);
     const occ = await page.evaluate(() => BB.dueOccurrences().filter(o => o.bill.id === 'eom').map(o => [o.kind, o.days, o.ym]));
@@ -66,13 +66,13 @@ run('alerts', async (t, browser) => {
   {
     const { ctx, page } = await openPage(browser, { clock: '2026-08-12T10:00:00' });
     await page.evaluate(() => {
-      const s = JSON.parse(localStorage.getItem('billsBudgets.v1'));
+      const s = JSON.parse(localStorage.getItem('householdBills.data'));
       s.bills.forEach(b => { b.paidMonths['2026-08'] = true; b.paidMonths['2026-09'] = true; });
-      localStorage.setItem('billsBudgets.v1', JSON.stringify(s));
+      localStorage.setItem('householdBills.data', JSON.stringify(s));
     });
     await page.reload(); await page.waitForTimeout(300);
     t.ok('D all-clear banner', await page.isVisible('.abar.clear'));
-    t.ok('D title has no badge', (await page.title()) === 'Bills & Budgets');
+    t.ok('D title has no badge', (await page.title()) === 'Household Bills & Budgets');
     await ctx.close();
   }
 
@@ -86,6 +86,7 @@ run('alerts', async (t, browser) => {
       window.Notification.permission = 'granted';
       window.Notification.requestPermission = () => Promise.resolve('granted');
     });
+    await openSettings(page, 'reminders');
     await page.click('#btnBell');
     await page.waitForTimeout(200);
     const fired = await page.evaluate(() => window.__n);

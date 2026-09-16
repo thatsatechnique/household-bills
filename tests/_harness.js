@@ -8,7 +8,20 @@ const http = require('http');
 const fs = require('fs');
 
 const APP = path.resolve(__dirname, '..', 'index.html');
-const FILE_URL = 'file://' + APP;
+
+// Every suite loads the app over http from a throwaway local server: Chromium
+// does not persist file:// localStorage reliably across reloads, and http is
+// what real use looks like anyway.
+const appServer = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/html' });
+  res.end(fs.readFileSync(APP));
+}).listen(0, '127.0.0.1');
+function appUrl() {
+  return new Promise(resolve => {
+    const done = () => resolve(`http://127.0.0.1:${appServer.address().port}/`);
+    appServer.listening ? done() : appServer.once('listening', done);
+  });
+}
 
 // Freeze the page clock so due-date and month-rollover logic is deterministic.
 function clockScript(iso) {
@@ -50,12 +63,14 @@ async function openPage(browser, opts = {}) {
     permissions: opts.permissions || [],
   });
   if (opts.clock) await ctx.addInitScript(clockScript(opts.clock));
+  // Tests start from empty storage; mark the first-run welcome as seen unless a test wants it.
+  if (!opts.welcome) await ctx.addInitScript(`try{ localStorage.setItem('householdBills.welcomed','1'); }catch(e){}`);
   for (const s of opts.init || []) await ctx.addInitScript(s);
   const page = await ctx.newPage();
   const errs = [];
   page.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-  await page.goto(opts.url || FILE_URL);
+  await page.goto(opts.url || await appUrl());
   await page.waitForTimeout(opts.settle || 350);
   return { ctx, page, errs };
 }
@@ -70,6 +85,16 @@ async function waitText(page, selector, re, ms = 6000) {
     await page.waitForTimeout(100);
   }
   return last;
+}
+
+// Open Settings on a given pane (people | data | reminders | appearance | about).
+async function openSettings(page, pane) {
+  await page.evaluate(p => BB.openSettings(p), pane);
+  await page.waitForTimeout(120);
+}
+async function closeSettings(page) {
+  await page.click('#settingsClose');
+  await page.waitForTimeout(100);
 }
 
 async function setInput(page, selector, value) {
@@ -88,10 +113,11 @@ async function run(name, body) {
     console.error(e);
   } finally {
     await browser.close();
+    appServer.close();
   }
   const failed = suite.report();
   if (require.main === module.parent) process.exitCode = failed ? 1 : 0;
   return failed;
 }
 
-module.exports = { chromium, APP, FILE_URL, clockScript, serve, Suite, openPage, waitText, setInput, run };
+module.exports = { chromium, APP, appUrl, clockScript, serve, Suite, openPage, waitText, setInput, openSettings, closeSettings, run };

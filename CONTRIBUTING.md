@@ -17,7 +17,8 @@ gitignored for that reason.
 
 **Data format changes** must be backward compatible: `normalize()` in
 `index.html` fills missing fields with defaults, and old exports must still
-import. Document the change in `docs/data-format.md`.
+import. Bump `SCHEMA_VERSION`, add a migration block, and document the change
+in `docs/data-format.md`.
 
 **Style.** ES5-flavoured JS on purpose (it runs in anything, it's easy to read
 in one sitting). Two-space indent. Currency through `Intl.NumberFormat`,

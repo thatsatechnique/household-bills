@@ -1,8 +1,14 @@
-# Bills & Budgets
+<p align="center">
+  <img src="docs/icon.svg" width="72" height="72" alt="">
+</p>
 
-A household bill tracker for two or more people, in a single HTML file.
-No build step, no server, no accounts, no dependencies. Open it in a browser
-and it works; bind it to a JSON file and your data is yours.
+# Household Bills &amp; Budgets
+
+A bill tracker for two or more people who share a home, in a single HTML file.
+No build step, no server, no account, no dependencies, no telemetry. Open it in
+a browser and it works; bind it to a JSON file and your data is yours.
+
+**[Try it](https://YOUR-GITHUB-USER.github.io/household-bills/)** · it runs entirely in your browser, nothing is uploaded.
 
 ![Dashboard](docs/dashboard-light.png)
 
@@ -28,29 +34,44 @@ desktop notifications.
 
 ## Quick start
 
+Either use the hosted copy above, or keep it entirely local:
+
 ```
-git clone https://github.com/<you>/bills-and-budgets
-cd bills-and-budgets
+git clone https://github.com/YOUR-GITHUB-USER/household-bills
+cd household-bills
 open index.html        # macOS — or double-click it, or drag it into a browser
 ```
 
-That's it. It starts with sample data for Alex and Sam. Edit the people, delete
-the sample bills, add your own.
+On first run it asks who shares the bills, then offers sample bills mapped onto
+those names or an empty start. Everything else lives under **Settings**.
+
+![Welcome](docs/welcome.png)
+
+In Chrome or Edge you can install it as an app from the address bar; it then
+opens in its own window with the icon on your dock or home screen.
 
 ### Keeping your data
 
-The storage chip under the title tells you where your data lives.
+The status pill in the header tells you where your data lives; click it for
+**Settings → Data &amp; backup**.
+
+![Settings — Data & backup](docs/settings-data.png)
 
 | Chip says | What it means |
 |---|---|
-| **Saved in this browser only** | `localStorage`. Fine for a start, but clearing browser data wipes it. Click **Save to a file…** |
-| **Saving to bills-budgets.json** | Every change is written to a file you chose (File System Access API, Chrome/Edge). Put it in a synced folder and it's backed up. |
+| **Saved in this browser** | `localStorage`. Fine for a start, but clearing browser data wipes it. Click **Save to a file…** |
+| **Saving to household-bills.json** | Every change is written to a file you chose (File System Access API, Chrome/Edge). Put it in a synced folder and it's backed up. |
 | **needs permission** | The browser forgot the file grant. Click **Reconnect**; edits made meanwhile were kept locally. |
 | **Preview panel** | You're inside a sandboxed iframe (some app previews). File pickers are blocked there — open the file directly in a tab. |
 | **Changes are not being saved** | Storage is blocked entirely. Export JSON before you leave. |
 
 Safari and Firefox don't have the File System Access API; there the app
 stays on `localStorage` and offers Export/Import JSON for backups.
+
+Whatever the storage, a **snapshot** is taken before the first change of each
+day and before any import, restore or reset; the last ten can be restored from
+Settings. And the JSON carries a `version` field so future format changes can
+migrate old files.
 
 ## How it works
 
@@ -110,12 +131,19 @@ npm run test:install     # downloads Chromium for Playwright, once
 npm test
 ```
 
-Six Playwright suites, about 200 assertions, run against the real file in a
-headless browser with a frozen clock. They cover contribution math, the split
+Seven Playwright suites, about 240 assertions, run against the real file in a
+headless browser with a frozen clock, served over a local http port. They cover contribution math, the split
 editor, month-end and short-month edge cases, the file-binding lifecycle
 (bind, write-through, reload-adopts-file, permission lapse, disconnect), the
-set-aside fund math, accrual vs cash reporting, and the sandboxed-iframe and
-blocked-storage cases.
+set-aside fund math, accrual vs cash reporting, first-run onboarding, snapshots
+and restore, and the sandboxed-iframe and blocked-storage cases.
+
+### Publishing your own copy
+
+The repo ships a GitHub Pages workflow. Enable Pages for the repository
+(Settings → Pages → Source: *GitHub Actions*), push to `main`, and the app is
+served from the repo root. Replace `YOUR-GITHUB-USER` in this README with your
+username.
 
 The app is one file on purpose. Keep it that way: inline CSS and JS, no
 framework, no bundler. If a change needs a library, it probably isn't the

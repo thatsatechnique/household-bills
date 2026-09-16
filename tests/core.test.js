@@ -1,6 +1,6 @@
 // Core: seed, contributions, split editor, people, export, theme, layout.
 'use strict';
-const { openPage, run, setInput } = require('./_harness');
+const { openPage, run, setInput, openSettings, closeSettings } = require('./_harness');
 
 // The seed, restated, so the expected contribution figures are derived rather than typed.
 const SEED = [
@@ -148,13 +148,15 @@ run('core', async (t, browser) => {
   t.ok('deleted after confirm', !(await page.evaluate(() => BB.state.bills.some(b => b.name === 'Coffee'))));
 
   // --- people
-  await page.click('#btnPeople');
-  await page.waitForTimeout(120);
+  await page.click('#btnSettings');
+  await page.waitForTimeout(150);
+  t.ok('settings opens on People', await page.isVisible('#peopleRows'));
   await page.click('#btnAddPerson');
   const inputs = await page.$$('#peopleRows input');
   await inputs[inputs.length - 1].fill('Riley');
   await page.click('#peopleSave');
   await page.waitForTimeout(150);
+  await closeSettings(page);
   t.ok('third person gets a tile', (await page.evaluate(() => BB.contributions().people.map(p => p.name))).join(',') === 'Alex,Sam,Riley');
   await page.click('[data-edit="water"]');
   await page.waitForTimeout(120);
@@ -165,24 +167,36 @@ run('core', async (t, browser) => {
   t.ok('3-way even split sums to 100', Math.abs(r3.reduce((a, v) => a + v, 0) - 100) < 0.011, r3.join('/'));
   await page.click('#billSave');
   await page.waitForTimeout(150);
-  await page.click('#btnPeople');
-  await page.waitForTimeout(120);
+  await openSettings(page, 'people');
   const rm = await page.$$('#peopleRows [data-prm]');
   await rm[2].click();
   await page.click('#peopleSave');
   await page.waitForTimeout(150);
+  await closeSettings(page);
   const ws = await page.evaluate(() => BB.state.bills.find(b => b.id === 'water').splits);
   t.ok('removing a person renormalizes to 100%', Math.abs(ws.reduce((a, s) => a + s.percent, 0) - 100) < 0.011, JSON.stringify(ws));
   t.ok('removing a person keeps dollars on the bill total', Math.abs(ws.reduce((a, s) => a + s.amount, 0) - 60) < 0.011);
   t.ok('people back to two', (await page.evaluate(() => BB.state.people.length)) === 2);
 
   // --- export, theme, layout
+  await page.click('#storageMini');
+  await page.waitForTimeout(150);
+  t.ok('storage status opens Settings > Data', await page.isVisible('#storageChip') && await page.isVisible('#btnExport'));
   const dl = page.waitForEvent('download');
   await page.click('#btnExport');
-  t.ok('export downloads a dated json', /bills-budgets-\d{8}\.json/.test((await dl).suggestedFilename()));
+  const exported = await dl;
+  t.ok('export downloads a dated json', /household-bills-\d{8}\.json/.test(exported.suggestedFilename()), exported.suggestedFilename());
+  const payload = JSON.parse(require('fs').readFileSync(await exported.path(), 'utf8'));
+  t.ok('export carries the schema version', payload.version === 1 && Array.isArray(payload.bills));
+  await page.click('[data-sec="appearance"]');
+  await page.click('#themeChoice [data-theme="dark"]');
+  await page.waitForTimeout(100);
+  t.ok('theme override applies', (await page.evaluate(() => getComputedStyle(document.body).backgroundColor)) === 'rgb(15, 18, 24)');
+  await page.click('#themeChoice [data-theme="auto"]');
+  await closeSettings(page);
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.waitForTimeout(100);
-  t.ok('dark scheme applies', (await page.evaluate(() => getComputedStyle(document.body).backgroundColor)) === 'rgb(15, 18, 24)');
+  t.ok('dark scheme follows the system in auto', (await page.evaluate(() => getComputedStyle(document.body).backgroundColor)) === 'rgb(15, 18, 24)');
   await page.emulateMedia({ colorScheme: 'light' });
   await page.setViewportSize({ width: 375, height: 800 });
   await page.waitForTimeout(200);

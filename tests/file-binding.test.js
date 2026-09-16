@@ -1,6 +1,6 @@
 // File binding: File System Access API simulated end to end, including reload, permission lapse, disconnect.
 'use strict';
-const { openPage, run, serve, waitText, setInput } = require('./_harness');
+const { openPage, run, serve, waitText, setInput, openSettings, closeSettings } = require('./_harness');
 
 // A fake showSaveFilePicker/showOpenFilePicker plus an IndexedDB that keeps object identity.
 // The "file" and the remembered handle live in localStorage so they survive reloads.
@@ -24,8 +24,8 @@ const FAKE_FS = `{
     };
   }
   if (!window.__noFS) {
-    window.showSaveFilePicker = async () => makeHandle('bills-budgets.json');
-    window.showOpenFilePicker  = async () => [makeHandle('bills-budgets.json')];
+    window.showSaveFilePicker = async () => makeHandle('household-bills.json');
+    window.showOpenFilePicker  = async () => [makeHandle('household-bills.json')];
   }
   const store = {};
   const bound = localStorage.getItem('__bound');
@@ -60,14 +60,18 @@ run('file-binding', async (t, browser) => {
   {
     const { ctx, page, errs } = await openPage(browser, { clock: '2026-08-12T10:00:00', url: URL, init: [FAKE_FS] });
 
+    t.ok('header status starts browser-only', /Saved in this browser/.test(await page.textContent('#storageMini')));
+    await openSettings(page, 'data');
     t.ok('starts unbound', /this browser only/.test(await page.textContent('#storageChip')));
     t.ok('offers Save to a file', await page.isVisible('#stNew'));
 
     await page.click('#stNew');
-    t.ok('chip shows bound', /Saving to bills-budgets\.json/.test(await waitText(page, '#storageChip', /Saving to/)));
+    t.ok('chip shows bound', /Saving to household-bills\.json/.test(await waitText(page, '#storageChip', /Saving to/)));
     const fd1 = await page.evaluate(() => JSON.parse(localStorage.getItem('__fd')));
     t.ok('file written with the full state', fd1.bills.length === 9 && fd1.people.length === 2);
-    t.ok('handle remembered', (await page.evaluate(() => localStorage.getItem('__bound'))) === 'bills-budgets.json');
+    t.ok('handle remembered', (await page.evaluate(() => localStorage.getItem('__bound'))) === 'household-bills.json');
+    t.ok('header status reflects the file', /Saving to household-bills\.json/.test(await page.textContent('#storageMini')));
+    await closeSettings(page);
 
     await setInput(page, '#checklist input[data-actual="streaming"]', '17.15');
     await page.waitForTimeout(800);
@@ -92,16 +96,18 @@ run('file-binding', async (t, browser) => {
     await page.reload();
     await waitText(page, '#storageChip', /Saving to/);
     t.ok('file contents adopted over localStorage', (await page.evaluate(() => BB.state.bills.map(b => b.name))).includes('Added Elsewhere'));
-    t.ok('localStorage mirror updated', await page.evaluate(() => JSON.parse(localStorage.getItem('billsBudgets.v1')).bills.some(b => b.id === 'fromfile')));
+    t.ok('localStorage mirror updated', await page.evaluate(() => JSON.parse(localStorage.getItem('householdBills.data')).bills.some(b => b.id === 'fromfile')));
 
     // permission lapse
     await page.evaluate(() => localStorage.setItem('__perm', 'prompt'));
     await page.reload();
     const chip = await waitText(page, '#storageChip', /needs permission/);
     t.ok('chip flags missing permission', /needs permission/.test(chip), chip.replace(/\s+/g, ' ').trim());
+    t.ok('header status flags it too', /needs permission/.test(await page.textContent('#storageMini')));
     t.ok('app still works from localStorage', (await page.evaluate(() => BB.state.bills.length)) === 10);
     await setInput(page, '#checklist input[data-actual="electric"]', '99');
-    t.ok('edits persist locally while stale', (await page.evaluate(() => JSON.parse(localStorage.getItem('billsBudgets.v1')).bills.find(b => b.id === 'electric').actuals['2026-08'])) === 99);
+    t.ok('edits persist locally while stale', (await page.evaluate(() => JSON.parse(localStorage.getItem('householdBills.data')).bills.find(b => b.id === 'electric').actuals['2026-08'])) === 99);
+    await openSettings(page, 'data');
     await page.click('#stRecon');
     t.ok('reconnect restores bound state', /Saving to/.test(await waitText(page, '#storageChip', /Saving to/)));
 
@@ -122,8 +128,9 @@ run('file-binding', async (t, browser) => {
       url: URL,
       init: ['window.__noFS = true;', FAKE_FS, 'delete window.showSaveFilePicker; delete window.showOpenFilePicker;'],
     });
-    const chip = await waitText(page, '#storageChip', /Back up/);
-    t.ok('unsupported browser: browser-only + Back up', /this browser only/.test(chip) && await page.isVisible('#stExp'));
+    await openSettings(page, 'data');
+    const chip = await waitText(page, '#storageChip', /Export JSON/);
+    t.ok('unsupported browser: browser-only + Export', /this browser only/.test(chip) && await page.isVisible('#stExp'));
     t.ok('unsupported browser: no Save-to-file button', !(await page.$('#stNew')));
     t.ok('unsupported browser: no console errors', errs.length === 0, errs.join(' | '));
     await ctx.close();
