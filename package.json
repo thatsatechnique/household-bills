@@ -1,6 +1,6 @@
 {
   "name": "household-bills",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Single-file household bill tracker: uneven splits, set-aside funds for quarterly/yearly bills, due-date alerts, and budget-vs-actual reporting. No build, no server, no dependencies.",
   "license": "MIT",
   "private": true,
