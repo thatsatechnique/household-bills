@@ -18,7 +18,7 @@ run('sandbox', async (t, browser) => {
     t.ok('A no file-picker buttons offered', !(await frame.$('#stNew')) && !(await frame.$('#stOpen')));
     t.ok('A Export offered instead', !!(await frame.$('#stExp')));
     t.ok('A explanatory tooltip', /browser tab/.test(await frame.getAttribute('#storageChip', 'title')));
-    t.ok('A app still functions', (await frame.$$eval('.card', e => e.length)) > 5 && /\$1,739\.00/.test(await frame.textContent('#tiles')));
+    t.ok('A app still functions', (await frame.$$eval('.card', e => e.length)) > 5 && /\$1,764\.00/.test(await frame.textContent('#tiles')));
     await frame.click('#tabRep'); await frame.waitForTimeout(300);
     t.ok('A reports still render', (await frame.$$eval('#chart path', e => e.length)) > 0);
     const res = await frame.evaluate(async () => { try { await window.showSaveFilePicker({ suggestedName: 'x.json' }); return 'resolved'; } catch (e) { return e.name; } });

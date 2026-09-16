@@ -133,6 +133,7 @@
   .tile .sub{font-size:12px;color:var(--muted);margin-top:2px}
   .tile.total{background:var(--accent-soft);border-color:transparent}
   .tile.muted .val{color:var(--muted)}
+  .tile .info{cursor:help;font-weight:400;opacity:.75}
 
   /* ---------- checklist ---------- */
   .checklist{display:flex;flex-direction:column;gap:6px}
@@ -849,7 +850,7 @@ function seedData(){
       mk("trash","Trash Service",120.00,"QUARTERLY",null,true,50,60.00,50,60.00,1),
       mk("water","Water",60.00,"MONTHLY",21,true,50,30.00,50,30.00),
       mk("streaming","Streaming",16.00,"MONTHLY",28,true,50,8.00,50,8.00),
-      mk("pet","Pet Supplies",50.00,"MONTHLY",10,true,null,null,null,null),
+      mk("pet","Pet Supplies",50.00,"MONTHLY",10,true,50,25.00,50,25.00),
       mk("household","Household Misc",0.00,"MONTHLY",null,false,null,null,null,null)
     ]
   };
@@ -1514,7 +1515,9 @@ function renderTiles(){
             '<div class="val">' + money(p.monthly) + '</div>' +
             '<div class="sub">per month · ' + p.count + ' bill' + (p.count === 1 ? "" : "s") + '</div></div>';
   });
-  html += '<div class="tile' + (c.unsplit > 0 ? "" : " muted") + '"><div class="lbl">Unsplit</div>' +
+  var unsplitHelp = "Bills saved with \u201cSplit between people\u201d turned off. They count toward the household total but not toward anyone\u2019s share. Edit a bill and turn the split on to assign it.";
+  html += '<div class="tile' + (c.unsplit > 0 ? '" title="' + esc(unsplitHelp) : ' muted') + '"><div class="lbl">Unsplit' +
+          (c.unsplit > 0 ? ' <span class="info" role="img" aria-label="' + esc(unsplitHelp) + '">&#9432;</span>' : '') + '</div>' +
           '<div class="val">' + money(c.unsplit) + '</div>' +
           '<div class="sub">not assigned to anyone · ' + c.unsplitCount + ' bill' + (c.unsplitCount === 1 ? "" : "s") + '</div></div>';
   html += '<div class="tile total"><div class="lbl">Total</div>' +

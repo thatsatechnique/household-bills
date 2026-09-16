@@ -12,8 +12,9 @@ const SEED = [
   [120, 1 / 3, 50, 50],     // Trash Service (quarterly)
   [60, 1, 50, 50],          // Water
   [16, 1, 50, 50],          // Streaming
+  [50, 1, 50, 50],          // Pet Supplies
 ];
-const UNSPLIT = 50;         // Pet Supplies
+const UNSPLIT = 0;          // the sample seeds nothing unsplit
 const r2 = n => Math.round(n * 100) / 100;
 const EXP = (() => {
   let alex = 0, sam = 0, total = UNSPLIT;
@@ -30,12 +31,14 @@ run('core', async (t, browser) => {
   t.ok('Alex monthly', Math.abs(c.people[0].monthly - EXP.alex) < 0.01, `${c.people[0].monthly} vs ${EXP.alex}`);
   t.ok('Sam monthly', Math.abs(c.people[1].monthly - EXP.sam) < 0.01, `${c.people[1].monthly} vs ${EXP.sam}`);
   t.ok('household total', Math.abs(c.total - EXP.total) < 0.01, `${c.total} vs ${EXP.total}`);
-  t.ok('unsplit bucket holds Pet Supplies', c.unsplit === UNSPLIT && c.unsplitCount === 1, c.unsplit);
+  t.ok('sample seeds nothing unsplit', c.unsplit === 0 && c.unsplitCount === 0, c.unsplit);
   t.ok('quarterly normalized to 40/mo', Math.abs(c.total - (2400 + 180 + 150 + 80 + 40 + 60 + 16 + 50)) < 0.01);
+  const unsplitTile = await page.$$eval('#tiles .tile', els => els.map(e => e.textContent).filter(t => /Unsplit/.test(t)).length);
+  t.ok('Unsplit tile present but muted when empty', unsplitTile === 1 && (await page.$('#tiles .tile.muted .lbl .info')) === null);
 
   const sum = await page.evaluate(() => BB.splitSummary(BB.state.bills.find(b => b.id === 'rent')));
   t.ok('split summary, percent form', sum === 'Alex 60% ($1,440.00) / Sam 40% ($960.00)', sum);
-  t.ok('split summary, unsplit', (await page.evaluate(() => BB.splitSummary(BB.state.bills.find(b => b.id === 'pet')))) === 'No split assigned');
+  t.ok('split summary, unsplit', (await page.evaluate(() => BB.splitSummary(Object.assign({}, BB.state.bills.find(b => b.id === 'pet'), { splits: null })))) === 'No split assigned');
 
   const tiles = await page.$$eval('#tiles .val', els => els.map(e => e.textContent));
   t.ok('tiles show exact cents', tiles.every(v => /^\$[\d,]+\.\d{2}$/.test(v)), tiles.join(' | '));
@@ -128,6 +131,8 @@ run('core', async (t, browser) => {
   await page.click('#billSave');
   await page.waitForTimeout(150);
   t.ok('yearly normalized (1200/12) into unsplit bucket', (await page.evaluate(() => BB.contributions().unsplit)) === UNSPLIT + 100);
+  const infoTitle = await page.$eval('#tiles .tile .lbl .info', e => e.getAttribute('aria-label'));
+  t.ok('Unsplit tile gains an info hover once it holds a bill', /Split between people/.test(infoTitle || ''), infoTitle);
   await page.click('#btnAdd');
   await page.waitForTimeout(120);
   await page.fill('#fName', 'Coffee');
