@@ -1,0 +1,15 @@
+{
+  "name": "bills-and-budgets",
+  "version": "1.0.0",
+  "description": "Single-file household bill tracker: uneven splits, set-aside funds for quarterly/yearly bills, due-date alerts, and budget-vs-actual reporting. No build, no server, no dependencies.",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "test": "node tests/run.js",
+    "test:install": "npx playwright install chromium",
+    "serve": "npx --yes serve -l 8080 ."
+  },
+  "devDependencies": {
+    "playwright": "^1.50.0"
+  }
+}

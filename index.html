@@ -1,0 +1,2346 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bills &amp; Budgets</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --panel:#ffffff; --card:#ffffff; --text:#14171f; --muted:#68707f;
+    --border:#e2e5ea; --border-strong:#cfd4dc; --input:#ffffff;
+    --accent:#3f5bd9; --accent-soft:#eaeeff; --accent-text:#ffffff;
+    --danger:#c0392b; --danger-soft:#fdecea;
+    --ok:#1c7c4a; --ok-soft:#e6f5ec;
+    --warn:#8a5a00; --warn-soft:#fdf3dc;
+    --shadow:0 1px 2px rgba(16,24,40,.06),0 4px 14px rgba(16,24,40,.06);
+    --chip-weekly-bg:#efe7fd; --chip-weekly-fg:#5b32b8;
+    --chip-monthly-bg:#e3ecfd; --chip-monthly-fg:#1f4fb5;
+    --chip-quarterly-bg:#fdf0dc; --chip-quarterly-fg:#8a5a00;
+    --chip-yearly-bg:#e2f4e8; --chip-yearly-fg:#166b3f;
+    --chip-due-bg:#eef0f4; --chip-due-fg:#4a5261;
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f1218; --panel:#171b23; --card:#171b23; --text:#e7eaf0; --muted:#98a1b1;
+    --border:#272d38; --border-strong:#39414f; --input:#11151c;
+    --accent:#6b86ff; --accent-soft:#1b2440; --accent-text:#0d1017;
+    --danger:#ff7a6b; --danger-soft:#3a1e1b;
+    --ok:#5fd394; --ok-soft:#12301f;
+    --warn:#f0c069; --warn-soft:#332711;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
+    --chip-weekly-bg:#2a2140; --chip-weekly-fg:#c3aaff;
+    --chip-monthly-bg:#1b2843; --chip-monthly-fg:#9dbaff;
+    --chip-quarterly-bg:#33280f; --chip-quarterly-fg:#f2c877;
+    --chip-yearly-bg:#12301f; --chip-yearly-fg:#79dda8;
+    --chip-due-bg:#232a35; --chip-due-fg:#b3bccb;
+  }
+  @media (prefers-color-scheme: dark){
+    :root[data-theme="auto"]{
+      --bg:#0f1218; --panel:#171b23; --card:#171b23; --text:#e7eaf0; --muted:#98a1b1;
+      --border:#272d38; --border-strong:#39414f; --input:#11151c;
+      --accent:#6b86ff; --accent-soft:#1b2440; --accent-text:#0d1017;
+      --danger:#ff7a6b; --danger-soft:#3a1e1b;
+      --ok:#5fd394; --ok-soft:#12301f;
+      --warn:#f0c069; --warn-soft:#332711;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
+      --chip-weekly-bg:#2a2140; --chip-weekly-fg:#c3aaff;
+      --chip-monthly-bg:#1b2843; --chip-monthly-fg:#9dbaff;
+      --chip-quarterly-bg:#33280f; --chip-quarterly-fg:#f2c877;
+      --chip-yearly-bg:#12301f; --chip-yearly-fg:#79dda8;
+      --chip-due-bg:#232a35; --chip-due-fg:#b3bccb;
+    }
+  }
+
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--text);
+    font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:20px 18px 80px}
+
+  /* ---------- header ---------- */
+  header.top{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  .title h1{margin:0;font-size:23px;letter-spacing:-.02em}
+  .title p{margin:3px 0 0;color:var(--muted);font-size:13px}
+  .top-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+
+  button{font:inherit;cursor:pointer;border-radius:9px;border:1px solid var(--border-strong);
+    background:var(--panel);color:var(--text);padding:8px 13px;transition:.13s background,.13s border-color,.13s transform}
+  button:hover{border-color:var(--accent)}
+  button:active{transform:translateY(1px)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  button.primary:hover{filter:brightness(1.07)}
+  button.ghost{background:transparent}
+  button.danger{color:var(--danger);border-color:var(--border-strong)}
+  button.danger:hover{border-color:var(--danger);background:var(--danger-soft)}
+  button.sm{padding:5px 10px;font-size:13px}
+  button.icon{padding:6px 8px;line-height:1;background:transparent;border-color:transparent;color:var(--muted)}
+  button.icon:hover{border-color:var(--border-strong);color:var(--text)}
+  button.icon.del:hover{color:var(--danger);border-color:var(--danger)}
+
+  section.panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:16px 18px;margin-bottom:18px;box-shadow:var(--shadow)}
+  .panel-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .panel-head h2{margin:0;font-size:15px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .panel-head .note{color:var(--muted);font-size:13px;margin-left:auto}
+
+  /* ---------- alert bar ---------- */
+  .alerts{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+  .abar{border:1px solid var(--border);border-radius:14px;padding:13px 15px;background:var(--panel);
+    box-shadow:var(--shadow);border-left-width:5px}
+  .abar.od{border-left-color:var(--danger);background:var(--danger-soft)}
+  .abar.soon{border-left-color:var(--warn);background:var(--warn-soft)}
+  .abar.clear{border-left-color:var(--ok)}
+  .abar-h{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:14px}
+  .abar-h strong{font-size:15px}
+  .abar.od strong{color:var(--danger)}
+  .abar.soon strong{color:var(--warn)}
+  .abar.clear strong{color:var(--ok)}
+  .abar-h .sub{color:var(--muted);font-size:13px}
+  .abar-tools{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted)}
+  .abar-tools select{width:auto;padding:4px 6px;font-size:13px}
+  .abar-items{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+  .apill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border-strong);
+    background:var(--panel);border-radius:99px;padding:5px 6px 5px 12px;font-size:13px;cursor:pointer;
+    color:var(--text);font-weight:600}
+  .apill:hover{border-color:var(--accent)}
+  .apill .when{font-weight:500;color:var(--muted)}
+  .apill .mark{border:0;background:var(--accent);color:#fff;border-radius:99px;padding:3px 10px;
+    font-size:12px;font-weight:700;pointer-events:none}
+  .bell{border-radius:99px;padding:5px 12px;font-size:13px}
+  .bell.on{background:var(--ok-soft);border-color:var(--ok);color:var(--ok);font-weight:700}
+
+  /* ---------- contribution tiles ---------- */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+  .tile{border:1px solid var(--border);border-radius:12px;padding:13px 14px;background:var(--bg)}
+  .tile .lbl{font-size:12.5px;color:var(--muted);font-weight:600;letter-spacing:.02em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tile .val{font-size:26px;font-weight:680;letter-spacing:-.02em;margin-top:4px;
+    font-variant-numeric:tabular-nums}
+  .tile .sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .tile.total{background:var(--accent-soft);border-color:transparent}
+  .tile.muted .val{color:var(--muted)}
+
+  /* ---------- checklist ---------- */
+  .checklist{display:flex;flex-direction:column;gap:6px}
+  .cl-row{display:flex;align-items:center;gap:11px;padding:9px 11px;border:1px solid var(--border);
+    border-radius:10px;background:var(--bg)}
+  .cl-row.overdue{border-color:var(--danger);background:var(--danger-soft)}
+  .cl-row.today{border-color:var(--warn);background:var(--warn-soft)}
+  .cl-row.paid{background:var(--ok-soft);border-color:transparent}
+  .cl-row.paid .cl-name{text-decoration:line-through;color:var(--muted)}
+  .cl-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex:none}
+  .cl-name{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cl-due{font-size:12.5px;color:var(--muted);flex:none}
+  .cl-amt{font-variant-numeric:tabular-nums;font-weight:600;flex:none;min-width:78px;text-align:right}
+  .cl-flag{font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;flex:none}
+  .cl-flag.od{color:var(--danger)}
+  .cl-flag.td{color:var(--warn)}
+  .progress{height:6px;border-radius:99px;background:var(--border);overflow:hidden;margin-bottom:12px}
+  .progress > i{display:block;height:100%;background:var(--ok);transition:width .25s}
+
+  /* ---------- bill cards ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:13px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:14px;
+    box-shadow:var(--shadow);display:flex;flex-direction:column;gap:9px}
+  .card.inactive{opacity:.55}
+  .card-top{display:flex;align-items:flex-start;gap:8px}
+  .card-name{font-weight:660;font-size:15.5px;flex:1;min-width:0;word-break:break-word}
+  .card-actions{display:flex;gap:2px;flex:none;margin:-4px -4px 0 0}
+  .amount{font-size:29px;font-weight:700;letter-spacing:-.025em;font-variant-numeric:tabular-nums;line-height:1.05}
+  .amount .per{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{font-size:11.5px;font-weight:700;letter-spacing:.02em;padding:3px 9px;border-radius:99px}
+  .chip.WEEKLY{background:var(--chip-weekly-bg);color:var(--chip-weekly-fg)}
+  .chip.MONTHLY{background:var(--chip-monthly-bg);color:var(--chip-monthly-fg)}
+  .chip.QUARTERLY{background:var(--chip-quarterly-bg);color:var(--chip-quarterly-fg)}
+  .chip.YEARLY{background:var(--chip-yearly-bg);color:var(--chip-yearly-fg)}
+  .chip.due{background:var(--chip-due-bg);color:var(--chip-due-fg)}
+  .chip.paid{background:var(--ok-soft);color:var(--ok)}
+  .split-cap{font-size:12.5px;color:var(--muted);border-top:1px dashed var(--border);padding-top:9px;
+    margin-top:auto;word-break:break-word}
+  .empty{color:var(--muted);font-size:14px;padding:10px 2px}
+
+  /* ---------- modal ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(10,14,22,.55);backdrop-filter:blur(2px);
+    display:none;align-items:flex-start;justify-content:center;padding:24px 14px;z-index:50;overflow:auto}
+  .overlay.open{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;
+    max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,.35);margin:auto}
+  .modal h3{margin:0;font-size:17px}
+  .modal-head{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .modal-body{padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+  .modal-foot{padding:14px 18px;border-top:1px solid var(--border);display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field > label{font-size:12.5px;font-weight:650;color:var(--muted);letter-spacing:.02em}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  input[type=text],input[type=number],select{
+    font:inherit;color:var(--text);background:var(--input);border:1px solid var(--border-strong);
+    border-radius:9px;padding:9px 11px;width:100%;min-width:0}
+  input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+  .prefixed{position:relative}
+  .prefixed > span{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted)}
+  .prefixed > input{padding-left:24px}
+  .hint{font-size:12px;color:var(--muted)}
+  .checkline{display:flex;align-items:center;gap:9px;font-size:14px}
+  .checkline input{width:17px;height:17px;accent-color:var(--accent)}
+
+  .split-box{border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--bg)}
+  .split-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .split-head strong{font-size:13px;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
+  .toggle{margin-left:auto;display:inline-flex;border:1px solid var(--border-strong);border-radius:9px;overflow:hidden}
+  .toggle button{border:0;border-radius:0;padding:5px 14px;background:transparent;font-weight:650;font-size:13px;color:var(--muted)}
+  .toggle button.on{background:var(--accent);color:#fff}
+  .srow{display:grid;grid-template-columns:1fr 116px 92px;gap:9px;align-items:center;margin-bottom:7px}
+  .srow .nm{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .srow .calc{font-size:13px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+  .srow input{padding:7px 9px;text-align:right}
+  .srow .wrap-in{position:relative}
+  .srow .wrap-in > b{position:absolute;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:400;font-size:13px}
+  .srow .wrap-in.pct > b{right:9px}
+  .srow .wrap-in.pct > input{padding-right:22px}
+  .srow .wrap-in.amt > b{left:9px}
+  .srow .wrap-in.amt > input{padding-left:20px;text-align:right}
+  .split-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;
+    border-top:1px dashed var(--border);margin-top:9px;padding-top:9px;font-size:13px;flex-wrap:wrap}
+  .sum-ok{color:var(--ok);font-weight:650}
+  .sum-bad{color:var(--danger);font-weight:700}
+  .sum-warn{color:var(--warn);font-weight:650}
+  .split-actions{display:flex;gap:6px}
+
+  .people-row{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:center;margin-bottom:8px}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);opacity:0;
+    background:var(--text);color:var(--bg);padding:9px 16px;border-radius:99px;font-size:13.5px;
+    pointer-events:none;transition:.25s;z-index:80;font-weight:600}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ---------- tabs + storage chip ---------- */
+  .tabs{display:inline-flex;border:1px solid var(--border-strong);border-radius:10px;overflow:hidden}
+  .tabs button{border:0;border-radius:0;padding:8px 18px;background:transparent;font-weight:650;color:var(--muted)}
+  .tabs button.on{background:var(--accent);color:#fff}
+  .storage{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);
+    border:1px solid var(--border);border-radius:99px;padding:4px 6px 4px 12px;background:var(--panel)}
+  .storage b{font-weight:650;color:var(--text)}
+  .storage .dot{width:7px;height:7px;border-radius:99px;background:var(--muted);flex:none}
+  .storage.bound .dot{background:var(--ok)}
+  .storage.stale .dot{background:var(--warn)}
+  .storage button{padding:3px 10px;font-size:12px;border-radius:99px}
+
+  /* ---------- checklist actuals ---------- */
+  .cl-actual{position:relative;flex:none;width:104px}
+  .cl-actual > b{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:400;font-size:12.5px}
+  .cl-actual input{padding:5px 7px 5px 18px;text-align:right;font-size:13.5px;font-variant-numeric:tabular-nums;
+    border-radius:8px;background:var(--input)}
+  .cl-actual input::placeholder{color:var(--muted);opacity:.7}
+  .var{font-size:11.5px;font-weight:700;flex:none;min-width:62px;text-align:right;font-variant-numeric:tabular-nums}
+  .var.over{color:var(--danger)} .var.under{color:var(--ok)} .var.none{color:var(--muted);font-weight:500}
+  .monthnav{display:flex;align-items:center;gap:4px}
+  .monthnav button{padding:3px 9px;font-size:13px;border-radius:8px}
+  .cl-head-note{color:var(--warn);font-weight:650}
+
+  /* ---------- set-aside ---------- */
+  .funds{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:13px}
+  .fund{border:1px solid var(--border);border-radius:12px;padding:13px 14px;background:var(--bg);
+    display:flex;flex-direction:column;gap:9px}
+  .fund-top{display:flex;align-items:baseline;gap:8px}
+  .fund-name{font-weight:660;flex:1;min-width:0}
+  .fund-state{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:99px}
+  .fund-state.funded{background:var(--ok-soft);color:var(--ok)}
+  .fund-state.ontrack{background:var(--accent-soft);color:var(--accent)}
+  .fund-state.short{background:var(--danger-soft);color:var(--danger)}
+  .fund-bal{display:flex;align-items:baseline;gap:8px}
+  .fund-bal .b{font-size:25px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .fund-bal .of{font-size:12.5px;color:var(--muted)}
+  .fmeter{height:7px;border-radius:99px;background:var(--border);overflow:hidden;display:flex}
+  .fmeter > i{display:block;height:100%}
+  .fmeter > i.have{background:var(--ok)}
+  .fmeter > i.due{background:var(--accent);opacity:.45}
+  .fund-line{font-size:12.5px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:baseline}
+  .fund-line b{color:var(--text);font-weight:650}
+  .fund-foot{display:flex;align-items:center;gap:7px;border-top:1px dashed var(--border);padding-top:9px;
+    font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+  .fund-foot .adj{position:relative;width:110px}
+  .fund-foot .adj > b{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:400}
+  .fund-foot .adj input{padding:5px 7px 5px 18px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums;border-radius:8px}
+  .toggle2{display:inline-flex;border:1px solid var(--border-strong);border-radius:9px;overflow:hidden;margin-left:auto}
+  .toggle2 button{border:0;border-radius:0;padding:4px 12px;background:transparent;font-size:12.5px;font-weight:650;color:var(--muted)}
+  .toggle2 button.on{background:var(--accent);color:#fff}
+
+  /* ---------- reports ---------- */
+  /* Series colors live on :root so both the chart and the in-table sparklines
+     resolve them (a var() that fails to resolve makes stroke fall back to none). */
+  :root{ --series-budget:#2a78d6; --series-actual:#eb6834; }
+  :root[data-theme="dark"]{ --series-budget:#3987e5; --series-actual:#d95926; }
+  @media (prefers-color-scheme: dark){
+    :root[data-theme="auto"]{ --series-budget:#3987e5; --series-actual:#d95926; }
+  }
+  .viz-root{ --surface-1:var(--panel); --grid:var(--border); --ink:var(--text); --ink-2:var(--muted); }
+  .chart-legend{display:flex;gap:16px;align-items:center;font-size:13px;color:var(--muted);margin-bottom:6px;flex-wrap:wrap}
+  .chart-legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .chart-scroll{overflow-x:auto;overflow-y:hidden;position:relative}
+  .chart-scroll svg{display:block;min-width:520px;width:100%;height:auto}
+  .chart-cap{font-size:12px;color:var(--muted);margin-top:8px}
+  .vtip{position:absolute;pointer-events:none;opacity:0;transition:opacity .1s;background:var(--text);color:var(--bg);
+    border-radius:9px;padding:8px 11px;font-size:12.5px;line-height:1.5;white-space:nowrap;z-index:5;
+    font-variant-numeric:tabular-nums;box-shadow:0 6px 20px rgba(0,0,0,.28)}
+  .vtip b{display:block;margin-bottom:3px;font-size:13px}
+  .vtip i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;font-style:normal}
+  .hoverband{fill:transparent}
+  .hoverband:hover{fill:var(--border);fill-opacity:.35}
+
+  .table-scroll{overflow-x:auto}
+  table.rt{border-collapse:separate;border-spacing:0;font-size:13px;width:100%;min-width:900px}
+  table.rt th,table.rt td{padding:7px 9px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--border)}
+  table.rt th{font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:700;
+    position:sticky;top:0;background:var(--panel);z-index:2}
+  table.rt th:first-child,table.rt td:first-child{text-align:left;position:sticky;left:0;background:var(--panel);z-index:1}
+  table.rt th:first-child{z-index:3}
+  table.rt tbody tr:hover td{background:var(--bg)}
+  table.rt tbody tr:hover td:first-child{background:var(--bg)}
+  table.rt td.mcell{padding:2px}
+  table.rt td.mcell input{border:1px solid transparent;background:transparent;border-radius:7px;
+    padding:5px 5px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;width:80px;color:var(--text)}
+  table.rt td.mcell input:hover{border-color:var(--border-strong)}
+  table.rt td.mcell input:focus{border-color:var(--accent);background:var(--input)}
+  table.rt td.mcell input::placeholder{color:var(--muted);opacity:.45}
+  table.rt td.mcell.offcycle{background:var(--bg)}
+  table.rt td.mcell.offcycle input::placeholder{opacity:.3}
+  table.rt tfoot td{font-weight:700;border-top:2px solid var(--border-strong);border-bottom:0}
+  table.rt .bname{font-weight:650}
+  table.rt .bsub{font-weight:400;color:var(--muted);font-size:11.5px}
+  .spark{display:block}
+  .rep-empty{color:var(--muted);padding:14px 2px;font-size:14px}
+
+  @media (max-width:560px){
+    .wrap{padding:14px 12px 60px}
+    .grid{grid-template-columns:1fr}
+    .row2{grid-template-columns:1fr}
+    .srow{grid-template-columns:1fr 100px 78px;gap:7px}
+    .amount{font-size:26px}
+    .top-actions{width:100%;margin-left:0}
+    .cl-amt{min-width:52px;font-size:12.5px}
+    .cl-actual{width:82px}
+    .cl-actual input{padding-left:16px;font-size:12.5px}
+    .var{min-width:42px;font-size:10.5px}
+    .cl-due{display:none}
+    .cl-row{gap:7px;padding:8px 9px}
+    .cl-flag{font-size:10px}
+    .chart-legend{font-size:12px}
+    .storage{font-size:12px}
+    table.rt th,table.rt td{padding:6px 7px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="title">
+      <h1>Bills &amp; Budgets</h1>
+      <p id="subtitle">Household bill tracker</p>
+    </div>
+    <div class="top-actions">
+      <button id="btnAdd" class="primary">+ Add Bill</button>
+      <button id="btnPeople">People</button>
+      <button id="btnExport">Export JSON</button>
+      <button id="btnImport">Import JSON</button>
+      <button id="btnTheme" class="ghost" title="Toggle theme">Theme: Auto</button>
+      <input type="file" id="fileInput" accept="application/json,.json" class="sr-only">
+    </div>
+  </header>
+
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+    <div class="tabs">
+      <button id="tabDash" class="on" data-view="dash">Dashboard</button>
+      <button id="tabRep" data-view="reports">Reports</button>
+    </div>
+    <div class="storage" id="storageChip"></div>
+  </div>
+
+  <div id="viewDash">
+  <div class="alerts" id="alerts"></div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Monthly Contributions</h2>
+      <span class="note">Active bills normalized to a monthly figure</span>
+    </div>
+    <div class="tiles" id="tiles"></div>
+  </section>
+
+  <section class="panel" id="fundPanel">
+    <div class="panel-head">
+      <h2>Set Aside</h2>
+      <span class="note">Quarterly and yearly bills — money banked ahead of the due date</span>
+    </div>
+    <div class="funds" id="funds"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Checklist</h2>
+      <div class="monthnav">
+        <button id="monthPrev" title="Previous month">&#9664;</button>
+        <strong id="monthLabel" style="font-size:14px;min-width:132px;text-align:center;display:inline-block"></strong>
+        <button id="monthNext" title="Next month">&#9654;</button>
+        <button id="monthToday" class="ghost">Today</button>
+      </div>
+      <span class="note" id="paidCounter"></span>
+    </div>
+    <div class="progress"><i id="progressBar" style="width:0%"></i></div>
+    <div class="checklist" id="checklist"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Active Bills</h2><span class="note" id="activeNote"></span></div>
+    <div class="grid" id="billGrid"></div>
+  </section>
+
+  <section class="panel" id="inactivePanel">
+    <div class="panel-head"><h2>Inactive</h2><span class="note">Excluded from totals and the checklist</span></div>
+    <div class="grid" id="inactiveGrid"></div>
+  </section>
+  </div><!-- /viewDash -->
+
+  <div id="viewReports" hidden>
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Year Summary</h2>
+        <span class="note">
+          <label for="yearSel">Year</label>
+          <select id="yearSel" style="width:auto;display:inline-block;padding:4px 8px;font-size:13px;margin-left:6px"></select>
+        </span>
+      </div>
+      <div class="tiles" id="reportTiles" style="margin-bottom:18px"></div>
+      <div class="viz-root">
+        <div class="chart-legend" id="chartLegend">
+          <span id="legendKeys"></span>
+          <div class="toggle2" id="basisToggle">
+            <button type="button" id="basisAccrual">Accrual</button>
+            <button type="button" id="basisCash">Cash</button>
+          </div>
+        </div>
+        <div class="chart-scroll" id="chartScroll">
+          <div id="chart"></div>
+          <div class="vtip" id="vtip"></div>
+        </div>
+        <div class="chart-cap" id="chartCap"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>By Bill</h2>
+        <span class="note">Click any month cell to enter or correct an actual</span>
+      </div>
+      <div class="table-scroll"><table class="rt" id="billTable"></table></div>
+      <div class="chart-cap" id="tableCap"></div>
+    </section>
+  </div>
+</div>
+
+<!-- ============ Bill modal ============ -->
+<div class="overlay" id="billOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="billModalTitle">
+    <div class="modal-head"><h3 id="billModalTitle">Add Bill</h3></div>
+    <div class="modal-body">
+      <div class="field">
+        <label for="fName">Name *</label>
+        <input type="text" id="fName" placeholder="Rent, Internet, …" autocomplete="off">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="fPeriod">Period</label>
+          <select id="fPeriod">
+            <option value="WEEKLY">Weekly</option>
+            <option value="MONTHLY" selected>Monthly</option>
+            <option value="QUARTERLY">Quarterly</option>
+            <option value="YEARLY">Yearly</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fAmount">Total Amount *</label>
+          <div class="prefixed"><span>$</span><input type="number" id="fAmount" step="0.01" min="0" placeholder="0.00"></div>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="fDueDay">Due Day (1–31, optional)</label>
+          <input type="number" id="fDueDay" min="1" max="31" step="1" placeholder="—">
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <label class="checkline" style="padding-top:8px"><input type="checkbox" id="fActive" checked> Active</label>
+        </div>
+      </div>
+
+      <div class="field" id="billMonthField" hidden>
+        <label for="fBillMonth">Billed in</label>
+        <select id="fBillMonth"></select>
+        <div class="hint" id="billMonthHint"></div>
+      </div>
+
+      <div class="split-box">
+        <div class="split-head">
+          <strong>Split</strong>
+          <label class="checkline" style="font-size:13px"><input type="checkbox" id="fSplitOn"> Split between people</label>
+          <div class="toggle" id="modeToggle">
+            <button type="button" data-mode="percent" id="modePct">%</button>
+            <button type="button" data-mode="amount" id="modeAmt">$</button>
+          </div>
+        </div>
+        <div id="splitRows"></div>
+        <div class="split-foot">
+          <span id="splitSummary"></span>
+          <div class="split-actions">
+            <button type="button" class="sm ghost" id="btnEven">Even split</button>
+            <button type="button" class="sm ghost" id="btnClearSplit">Zero out</button>
+          </div>
+        </div>
+        <div id="splitNote" class="hint" style="margin-top:8px"></div>
+      </div>
+
+      <div id="billError" class="hint" style="color:var(--danger);font-weight:600"></div>
+    </div>
+    <div class="modal-foot">
+      <button id="billCancel" class="ghost">Cancel</button>
+      <button id="billSave" class="primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ People modal ============ -->
+<div class="overlay" id="peopleOverlay">
+  <div class="modal" style="max-width:460px" role="dialog" aria-modal="true">
+    <div class="modal-head"><h3>People</h3></div>
+    <div class="modal-body">
+      <div id="peopleRows"></div>
+      <button id="btnAddPerson" class="sm">+ Add person</button>
+      <div class="hint">Removing a person drops them from every split and redistributes their share across the people who remain.</div>
+    </div>
+    <div class="modal-foot">
+      <button id="peopleCancel" class="ghost">Cancel</button>
+      <button id="peopleSave" class="primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Confirm modal ============ -->
+<div class="overlay" id="confirmOverlay">
+  <div class="modal" style="max-width:400px" role="dialog" aria-modal="true">
+    <div class="modal-head"><h3 id="confirmTitle">Are you sure?</h3></div>
+    <div class="modal-body"><div id="confirmBody" class="hint" style="font-size:14px"></div></div>
+    <div class="modal-foot">
+      <button id="confirmNo" class="ghost">Cancel</button>
+      <button id="confirmYes" class="danger">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   Constants & helpers
+   ============================================================ */
+var STORE_KEY = "billsBudgets.v1";
+var THEME_KEY = "billsBudgets.theme";
+
+var PERIODS = {
+  WEEKLY:    { label:"Weekly",    factor: 52/12 },
+  MONTHLY:   { label:"Monthly",   factor: 1 },
+  QUARTERLY: { label:"Quarterly", factor: 1/3 },
+  YEARLY:    { label:"Yearly",    factor: 1/12 }
+};
+
+var fmtExact = new Intl.NumberFormat('en-US', { style:'currency', currency:'USD' });
+var fmtWhole = new Intl.NumberFormat('en-US', { style:'currency', currency:'USD', minimumFractionDigits:0, maximumFractionDigits:0 });
+
+function money(n){ return fmtExact.format(round2(n || 0)); }
+function moneyWhole(n){ return fmtWhole.format(Math.round(n || 0)); }
+function round2(n){ return Math.round((Number(n) + Number.EPSILON) * 100) / 100; }
+function num(v){ var n = parseFloat(v); return isFinite(n) ? n : 0; }
+function esc(s){
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+function ordinal(d){
+  d = Number(d);
+  var s = ["th","st","nd","rd"], v = d % 100;
+  return d + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+function pctText(p){
+  var r = Math.round(p * 100) / 100;
+  return (Math.abs(r - Math.round(r)) < 0.005 ? String(Math.round(r)) : String(r)) + "%";
+}
+function uid(prefix){
+  var r = (typeof crypto !== "undefined" && crypto.randomUUID)
+    ? crypto.randomUUID().slice(0, 8)
+    : Math.random().toString(36).slice(2, 10);
+  return (prefix || "id") + "-" + r;
+}
+function ymKey(d){
+  d = d || new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+}
+function dayKey(d){
+  d = d || new Date();
+  return ymKey(d) + "-" + String(d.getDate()).padStart(2, "0");
+}
+/* ---- month indices: a single integer per calendar month ---- */
+function mIdx(y, m){ return y * 12 + m; }
+function idxOfYm(k){ return parseInt(k.slice(0,4),10) * 12 + (parseInt(k.slice(5,7),10) - 1); }
+function ymOfIdx(i){ return Math.floor(i/12) + "-" + String(i % 12 + 1).padStart(2, "0"); }
+function nowIdx(){ var d = new Date(); return mIdx(d.getFullYear(), d.getMonth()); }
+
+/* ---- billing cycles ---- */
+// Weekly and monthly bills hit every month. Quarterly and yearly hit on a
+// cycle anchored to billMonth, and get a set-aside fund.
+function cycleLen(period){ return period === "QUARTERLY" ? 3 : period === "YEARLY" ? 12 : 1; }
+function isFunded(b){ return b.period === "QUARTERLY" || b.period === "YEARLY"; }
+function billsInMonth(b, y, m){
+  if(!isFunded(b)) return true;
+  var C = cycleLen(b.period), bm = (b.billMonth || 1) - 1;
+  return ((((m - bm) % C) + C) % C) === 0;
+}
+function billsAtIdx(b, i){ return billsInMonth(b, Math.floor(i/12), i % 12); }
+function lastBillIdx(b, i){
+  for(var k = i; k > i - 13; k--) if(billsAtIdx(b, k)) return k;
+  return i;
+}
+function nextBillIdx(b, i){
+  for(var k = i; k < i + 13; k++) if(billsAtIdx(b, k)) return k;
+  return i;
+}
+function billingMonthList(b){
+  if(!isFunded(b)) return [];
+  var C = cycleLen(b.period), bm = (b.billMonth || 1) - 1, out = [];
+  for(var m = bm; m < 12; m += C) out.push(MONTH_ABBR[m]);
+  for(var m2 = bm - C; m2 >= 0; m2 -= C) out.unshift(MONTH_ABBR[m2]);
+  return out;
+}
+
+/* ---- set-aside fund ---- */
+// opening = balance at the start of fund.asOf, before that month's contribution.
+function fundMonthly(b){ return round2(monthlyOf(b)); }
+function fundBalance(b, atIdx){
+  if(!b.fund) return 0;
+  var start = idxOfYm(b.fund.asOf);
+  if(atIdx < start) return round2(b.fund.opening);
+  var paid = 0;
+  for(var i = start; i <= atIdx; i++){
+    var v = b.actuals[ymOfIdx(i)];
+    if(v != null) paid += v;
+  }
+  return round2(b.fund.opening + (atIdx - start + 1) * fundMonthly(b) - paid);
+}
+// "Fully funded as of today": whatever should have accrued since the last time
+// this bill was actually billed.
+function seedFund(b, curIdx){
+  var monthly = fundMonthly(b);
+  var curK = ymOfIdx(curIdx);
+  var next = nextBillIdx(b, curIdx);
+  if(next === curIdx && (b.paidMonths[curK] || b.actuals[curK] != null)) next = nextBillIdx(b, curIdx + 1);
+  var monthsUntil = Math.max(0, next - curIdx);
+  // Enough banked that the remaining contributions land exactly on the amount due.
+  var desired = Math.max(0, round2(b.totalAmount - monthsUntil * monthly));
+  var payNow = b.actuals[curK];
+  b.fund = { opening: round2(desired - monthly + (payNow == null ? 0 : payNow)), asOf: curK };
+}
+function setFundBalance(b, value){
+  var cur = nowIdx(), payNow = b.actuals[ymOfIdx(cur)];
+  b.fund = { opening: round2(value - fundMonthly(b) + (payNow == null ? 0 : payNow)), asOf: ymOfIdx(cur) };
+}
+function fundStatus(b){
+  var cur = nowIdx();
+  var bal = fundBalance(b, cur), monthly = fundMonthly(b);
+  var next = nextBillIdx(b, cur);
+  var curK = ymOfIdx(cur);
+  if(next === cur && (b.paidMonths[curK] || b.actuals[curK] != null)) next = nextBillIdx(b, cur + 1);
+  var monthsUntil = next - cur;
+  var projected = round2(bal + monthsUntil * monthly);
+  var need = b.totalAmount;
+  var state = bal + 0.005 >= need ? "funded" : (projected + 0.005 >= need ? "ontrack" : "short");
+  return {
+    balance: bal, monthly: monthly, nextIdx: next, monthsUntil: monthsUntil,
+    projected: projected, need: need, state: state,
+    shortBy: round2(Math.max(0, need - projected))
+  };
+}
+
+function daysInMonth(y, m){ return new Date(y, m + 1, 0).getDate(); }
+// A dueDay of 31 in a 30-day month lands on the 30th.
+function effDue(dueDay, y, m){ return Math.min(dueDay, daysInMonth(y, m)); }
+function $(id){ return document.getElementById(id); }
+
+/* ============================================================
+   Seed data
+   ============================================================ */
+function seedData(){
+  var mk = function(id,name,total,period,dueDay,active,cPct,cAmt,sPct,sAmt,billMonth){
+    return {
+      id:id, name:name, totalAmount:total, period:period, dueDay:dueDay, isActive:active,
+      billMonth: billMonth || null,
+      splits: cPct === null ? null : [
+        { personId:"alex", name:"Alex", percent:cPct, amount:cAmt },
+        { personId:"sam",  name:"Sam",  percent:sPct, amount:sAmt }
+      ],
+      paidMonths:{}, actuals:{}
+    };
+  };
+  return {
+    settings:{ leadDays:3, notify:false, lastNotify:"", basis:"accrual" },
+    people:[ {id:"alex",name:"Alex"}, {id:"sam",name:"Sam"} ],
+    bills:[
+      mk("rent","Rent",2400.00,"MONTHLY",1,true,60,1440.00,40,960.00),
+      mk("car-insurance","Car Insurance",180.00,"MONTHLY",17,true,70,126.00,30,54.00),
+      mk("electric","Electric & Gas",150.00,"MONTHLY",27,true,50,75.00,50,75.00),
+      mk("internet","Internet",80.00,"MONTHLY",13,true,50,40.00,50,40.00),
+      mk("trash","Trash Service",120.00,"QUARTERLY",null,true,50,60.00,50,60.00,1),
+      mk("water","Water",60.00,"MONTHLY",21,true,50,30.00,50,30.00),
+      mk("streaming","Streaming",16.00,"MONTHLY",28,true,50,8.00,50,8.00),
+      mk("pet","Pet Supplies",50.00,"MONTHLY",10,true,null,null,null,null),
+      mk("household","Household Misc",0.00,"MONTHLY",null,false,null,null,null,null)
+    ]
+  };
+}
+
+/* ============================================================
+   State / persistence
+   ============================================================ */
+var state = null;
+
+// Keeps only well-formed "YYYY-MM" -> number entries.
+function cleanActuals(a){
+  var out = {};
+  if(!a || typeof a !== "object") return out;
+  Object.keys(a).forEach(function(k){
+    if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(k)) return;
+    var v = parseFloat(a[k]);
+    if(isFinite(v)) out[k] = round2(v);
+  });
+  return out;
+}
+
+function normalize(raw){
+  var data = { settings:{ leadDays:3, notify:false, lastNotify:"", basis:"accrual" }, people:[], bills:[] };
+  if(!raw || typeof raw !== "object") return seedData();
+  if(raw.settings && typeof raw.settings === "object"){
+    var ld = Math.round(num(raw.settings.leadDays));
+    data.settings.leadDays = (ld >= 0 && ld <= 30) ? ld : 3;
+    data.settings.notify = raw.settings.notify === true;
+    data.settings.lastNotify = String(raw.settings.lastNotify || "");
+    data.settings.basis = raw.settings.basis === "cash" ? "cash" : "accrual";
+  }
+  data.people = (Array.isArray(raw.people) ? raw.people : []).map(function(p, i){
+    return { id: String(p && p.id || uid("person")), name: String(p && p.name || ("Person " + (i+1))) };
+  });
+  if(!data.people.length) data.people = seedData().people;
+
+  data.bills = (Array.isArray(raw.bills) ? raw.bills : []).map(function(b){
+    b = b || {};
+    var period = PERIODS[b.period] ? b.period : "MONTHLY";
+    var dd = (b.dueDay === null || b.dueDay === undefined || b.dueDay === "") ? null
+             : Math.min(31, Math.max(1, Math.round(num(b.dueDay))));
+    var splits = null;
+    if(Array.isArray(b.splits) && b.splits.length){
+      splits = b.splits.map(function(s){
+        var pid = String(s && s.personId || "");
+        var person = data.people.filter(function(p){ return p.id === pid; })[0];
+        return {
+          personId: pid,
+          name: (person ? person.name : (s && s.name) || pid),
+          percent: round2(num(s && s.percent)),
+          amount: round2(num(s && s.amount))
+        };
+      }).filter(function(s){
+        return data.people.some(function(p){ return p.id === s.personId; });
+      });
+      if(!splits.length) splits = null;
+    }
+    var actuals = cleanActuals(b.actuals);
+    var out = {
+      id: String(b.id || uid("bill")),
+      name: String(b.name || "Untitled"),
+      totalAmount: round2(num(b.totalAmount)),
+      period: period,
+      dueDay: dd,
+      isActive: b.isActive !== false,
+      splits: splits,
+      paidMonths: (b.paidMonths && typeof b.paidMonths === "object") ? b.paidMonths : {},
+      actuals: actuals,
+      billMonth: null,
+      fund: null
+    };
+
+    if(out.period === "QUARTERLY" || out.period === "YEARLY"){
+      var bm = Math.round(num(b.billMonth));
+      if(bm >= 1 && bm <= 12) out.billMonth = bm;
+      else {
+        // No cycle recorded: infer it from the most recent payment, else assume
+        // calendar quarters / January.
+        var keys = Object.keys(actuals).sort();
+        out.billMonth = keys.length ? parseInt(keys[keys.length-1].slice(5,7), 10) : 1;
+      }
+      if(b.fund && typeof b.fund === "object" && /^\d{4}-(0[1-9]|1[0-2])$/.test(String(b.fund.asOf))){
+        out.fund = { opening: round2(num(b.fund.opening)), asOf: String(b.fund.asOf) };
+      }else{
+        seedFund(out, nowIdx());   // "fully funded as of today"
+      }
+    }
+    return out;
+  });
+  return data;
+}
+
+function load(){
+  try{
+    var raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return normalize(seedData());
+    return normalize(JSON.parse(raw));
+  }catch(e){
+    console.warn("Could not read saved data, using seed.", e);
+    return normalize(seedData());
+  }
+}
+
+/* ------------------------------------------------------------
+   Storage: localStorage is always written as a mirror. If the
+   browser supports the File System Access API and the user has
+   bound a .json file, every change is also written there
+   (debounced) — that file is the durable, backup-able copy.
+   ------------------------------------------------------------ */
+var fileHandle = null;          // FileSystemFileHandle | null
+var fileName = "";
+var fileStatus = "none";        // none | bound | stale | unsupported
+var writeTimer = null, writing = false, writeAgain = false;
+
+// A cross-origin frame (the artifact preview panel) may not open a file picker
+// at all, and its storage is often partitioned or blocked outright.
+function inFrame(){
+  try{ return window.self !== window.top; }catch(e){ return true; }
+}
+function storageWorks(){
+  try{
+    localStorage.setItem("__bb_probe", "1");
+    localStorage.removeItem("__bb_probe");
+    return true;
+  }catch(e){ return false; }
+}
+function fsSupported(){
+  return typeof window.showSaveFilePicker === "function" && !inFrame();
+}
+
+function idb(){
+  return new Promise(function(res, rej){
+    if(!window.indexedDB) return rej(new Error("no idb"));
+    var r = indexedDB.open("bills-budgets", 1);
+    r.onupgradeneeded = function(){ r.result.createObjectStore("handles"); };
+    r.onsuccess = function(){ res(r.result); };
+    r.onerror = function(){ rej(r.error); };
+  });
+}
+function idbPut(key, val){
+  return idb().then(function(db){
+    return new Promise(function(res, rej){
+      var tx = db.transaction("handles", "readwrite");
+      tx.objectStore("handles").put(val, key);
+      tx.oncomplete = res; tx.onerror = function(){ rej(tx.error); };
+    });
+  });
+}
+function idbGet(key){
+  return idb().then(function(db){
+    return new Promise(function(res, rej){
+      var tx = db.transaction("handles", "readonly");
+      var q = tx.objectStore("handles").get(key);
+      q.onsuccess = function(){ res(q.result || null); };
+      q.onerror = function(){ rej(q.error); };
+    });
+  });
+}
+
+var storageWarned = false;
+function save(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+  catch(e){
+    console.warn(e);
+    if(!storageWarned){
+      storageWarned = true;
+      toast("This page can't save changes — use Export JSON to keep your data");
+    }
+  }
+  if(fileHandle && fileStatus === "bound"){
+    clearTimeout(writeTimer);
+    writeTimer = setTimeout(writeFile, 400);
+  }
+}
+
+function writeFile(){
+  if(!fileHandle) return;
+  if(writing){ writeAgain = true; return; }
+  writing = true;
+  fileHandle.createWritable().then(function(w){
+    return w.write(JSON.stringify(state, null, 2)).then(function(){ return w.close(); });
+  }).then(function(){
+    writing = false;
+    if(writeAgain){ writeAgain = false; writeFile(); }
+  }).catch(function(e){
+    writing = false;
+    console.warn("File write failed", e);
+    fileStatus = "stale"; renderStorage();
+    toast("Couldn't write to " + fileName + " — data is still saved in this browser");
+  });
+}
+
+function bindFile(handle, adopt){
+  fileHandle = handle;
+  fileName = handle.name;
+  fileStatus = "bound";
+  return idbPut("datafile", handle).catch(function(){}).then(function(){
+    if(adopt) writeFile();
+    renderStorage();
+  });
+}
+
+function pickerBlocked(e){
+  if(e && e.name === "AbortError") return true;         // user just cancelled
+  console.warn(e);
+  if(e && e.name === "SecurityError"){
+    fileStatus = "framed"; renderStorage();
+    toast("This panel can't open a file picker — open the downloaded file in a browser tab");
+  }else{
+    toast("Couldn't open the file picker here");
+  }
+  return true;
+}
+
+function connectNewFile(){
+  if(!fsSupported()){
+    toast(inFrame() ? "Saving to a file needs this page open in its own tab"
+                    : "This browser can't bind to a file — use Export JSON instead");
+    return;
+  }
+  try{
+  window.showSaveFilePicker({
+    suggestedName: "bills-budgets.json",
+    types: [{ description: "JSON", accept: { "application/json": [".json"] } }]
+  }).then(function(h){
+    return bindFile(h, true).then(function(){ toast("Now saving to " + h.name); });
+  }).catch(pickerBlocked);
+  }catch(e){ pickerBlocked(e); }
+}
+
+function openExistingFile(){
+  if(typeof window.showOpenFilePicker !== "function" || inFrame()){
+    toast(inFrame() ? "Opening a file needs this page open in its own tab"
+                    : "This browser can't open a bound file");
+    return;
+  }
+  try{
+  window.showOpenFilePicker({
+    types: [{ description: "JSON", accept: { "application/json": [".json"] } }],
+    multiple: false
+  }).then(function(list){
+    var h = list[0];
+    return h.getFile().then(function(f){ return f.text(); }).then(function(txt){
+      var next = normalize(JSON.parse(txt));
+      askConfirm("Load " + h.name + "?",
+        "This replaces the " + state.bills.length + " bill(s) in this browser with " +
+        next.bills.length + " bill(s) from the file, and keeps saving there from now on.",
+        function(){
+          state = next;
+          bindFile(h, false).then(function(){
+            try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+            renderAll(); toast("Loaded " + h.name);
+          });
+        });
+      $("confirmYes").textContent = "Load";
+    });
+  }).catch(pickerBlocked);
+  }catch(e){ pickerBlocked(e); }
+}
+
+function disconnectFile(){
+  fileHandle = null; fileName = ""; fileStatus = "none";
+  idbPut("datafile", null).catch(function(){});
+  renderStorage();
+  toast("Disconnected — saving to this browser only");
+}
+
+// On load: if a handle was stored, Chrome usually needs a user gesture to
+// re-grant access, so we surface a Reconnect button rather than nagging.
+function detectEnv(){
+  if(!storageWorks()) fileStatus = "nostorage";
+  else if(inFrame()) fileStatus = "framed";
+  else if(!fsSupported()) fileStatus = "unsupported";
+  else fileStatus = "none";
+  return fileStatus;
+}
+
+function restoreFile(){
+  if(fileStatus !== "none") return Promise.resolve();
+  return idbGet("datafile").then(function(h){
+    if(!h) return;
+    fileHandle = h; fileName = h.name;
+    if(!h.queryPermission) { fileStatus = "stale"; return; }
+    return h.queryPermission({ mode: "readwrite" }).then(function(p){
+      if(p === "granted"){ fileStatus = "bound"; return adoptFile(); }
+      fileStatus = "stale";
+    });
+  }).catch(function(e){ console.warn(e); });
+}
+
+// Pull the file's contents in as the source of truth.
+function adoptFile(){
+  if(!fileHandle) return Promise.resolve();
+  return fileHandle.getFile().then(function(f){ return f.text(); }).then(function(txt){
+    if(!txt.trim()) { writeFile(); return; }
+    state = normalize(JSON.parse(txt));
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+  }).catch(function(e){ console.warn("Could not read bound file", e); fileStatus = "stale"; });
+}
+
+function reconnectFile(){
+  if(!fileHandle || !fileHandle.requestPermission) return;
+  fileHandle.requestPermission({ mode: "readwrite" }).then(function(p){
+    if(p !== "granted"){ toast("Access to " + fileName + " was declined"); return; }
+    fileStatus = "bound";
+    adoptFile().then(function(){ renderAll(); renderStorage(); toast("Reconnected to " + fileName); });
+  }).catch(function(e){ console.warn(e); });
+}
+
+function renderStorage(){
+  var el = $("storageChip"), html, cls = "storage";
+  el.title = "";
+  if(fileStatus === "bound"){
+    cls += " bound";
+    html = '<span class="dot"></span>Saving to <b>' + esc(fileName) + '</b>' +
+           '<button id="stDisc" class="ghost">Disconnect</button>';
+  }else if(fileStatus === "stale"){
+    cls += " stale";
+    html = '<span class="dot"></span><b>' + esc(fileName) + '</b> needs permission' +
+           '<button id="stRecon">Reconnect</button>';
+  }else if(fileStatus === "framed"){
+    cls += " stale";
+    el.title = "Preview panels run in a sandboxed frame: file pickers are blocked and " +
+               "stored data may be discarded. Open the downloaded .html in a browser tab for the real thing.";
+    html = '<span class="dot"></span><b>Preview panel</b> — saving to a file is blocked here' +
+           '<button id="stExp" class="ghost">Export JSON</button>';
+  }else if(fileStatus === "nostorage"){
+    cls += " stale";
+    el.title = "This page has no writable storage, so changes are lost on reload. " +
+               "Open the downloaded .html in a browser tab.";
+    html = '<span class="dot"></span><b>Changes are not being saved</b>' +
+           '<button id="stExp" class="ghost">Export JSON</button>';
+  }else if(fileStatus === "unsupported"){
+    el.title = "This browser has no File System Access API. Export JSON to back up.";
+    html = '<span class="dot"></span>Saved in <b>this browser only</b>' +
+           '<button id="stExp" class="ghost">Back up</button>';
+  }else{
+    html = '<span class="dot"></span>Saved in <b>this browser only</b>' +
+           '<button id="stNew">Save to a file…</button><button id="stOpen" class="ghost">Open…</button>';
+  }
+  el.className = cls;
+  el.innerHTML = html;
+  if($("stNew")) $("stNew").addEventListener("click", connectNewFile);
+  if($("stOpen")) $("stOpen").addEventListener("click", openExistingFile);
+  if($("stDisc")) $("stDisc").addEventListener("click", disconnectFile);
+  if($("stRecon")) $("stRecon").addEventListener("click", reconnectFile);
+  if($("stExp")) $("stExp").addEventListener("click", exportJSON);
+}
+
+/* ============================================================
+   Domain math
+   ============================================================ */
+function factorOf(period){ return (PERIODS[period] || PERIODS.MONTHLY).factor; }
+function monthlyOf(bill){ return bill.totalAmount * factorOf(bill.period); }
+
+// A split set is treated as percent-driven when every percent is a finite
+// number and they sum to 100 (±0.01). Otherwise the stored dollar amounts win.
+function usesPercent(splits){
+  if(!splits || !splits.length) return false;
+  var sum = 0;
+  for(var i=0;i<splits.length;i++){
+    var p = splits[i].percent;
+    if(typeof p !== "number" || !isFinite(p)) return false;
+    sum += p;
+  }
+  return Math.abs(sum - 100) <= 0.01;
+}
+
+function contributions(){
+  var byPerson = {}, counts = {};
+  state.people.forEach(function(p){ byPerson[p.id] = 0; counts[p.id] = 0; });
+  var unsplit = 0, unsplitCount = 0, total = 0;
+
+  state.bills.forEach(function(b){
+    if(!b.isActive) return;
+    var f = factorOf(b.period);
+    var monthly = b.totalAmount * f;
+    total += monthly;
+    if(!b.splits || !b.splits.length){
+      unsplit += monthly; unsplitCount++;
+      return;
+    }
+    var pctMode = usesPercent(b.splits);
+    b.splits.forEach(function(s){
+      if(!(s.personId in byPerson)) return;
+      byPerson[s.personId] += pctMode ? (monthly * s.percent / 100) : (s.amount * f);
+      counts[s.personId]++;
+    });
+  });
+
+  var people = state.people.map(function(p){
+    return { id:p.id, name:p.name, monthly: round2(byPerson[p.id]), count: counts[p.id] };
+  });
+  return {
+    people: people,
+    unsplit: round2(unsplit),
+    unsplitCount: unsplitCount,
+    total: round2(total),
+    assigned: round2(people.reduce(function(a,p){ return a + p.monthly; }, 0) + round2(unsplit))
+  };
+}
+
+function splitSummary(bill){
+  if(!bill.splits || !bill.splits.length) return "No split assigned";
+  var pctMode = usesPercent(bill.splits);
+  return bill.splits.map(function(s){
+    return pctMode
+      ? s.name + " " + pctText(s.percent) + " (" + money(s.amount) + ")"
+      : s.name + " " + money(s.amount);
+  }).join(" / ");
+}
+
+/* Every unpaid due date worth flagging: anything already past in the current
+   month, plus anything landing within the lead window (which can roll into
+   next month near the end of a month). */
+function dueOccurrences(){
+  var now = new Date();
+  var y = now.getFullYear(), m = now.getMonth(), today = now.getDate();
+  var anchor = new Date(y, m, today).getTime();
+  var lead = state.settings.leadDays;
+  var out = [];
+  state.bills.forEach(function(b){
+    if(!b.isActive || b.dueDay == null) return;
+    [0, 1].forEach(function(off){
+      var ref = new Date(y, m + off, 1);
+      var yy = ref.getFullYear(), mm = ref.getMonth();
+      if(!billsInMonth(b, yy, mm)) return;
+      var ym = yy + "-" + String(mm + 1).padStart(2, "0");
+      if(b.paidMonths[ym]) return;
+      var day = effDue(b.dueDay, yy, mm);
+      var date = new Date(yy, mm, day);
+      var days = Math.round((date.getTime() - anchor) / 86400000);
+      if(off === 0 && days < 0) out.push({ bill:b, ym:ym, date:date, days:days, kind:"overdue" });
+      else if(days >= 0 && days <= lead) out.push({ bill:b, ym:ym, date:date, days:days, kind: days === 0 ? "today" : "soon" });
+    });
+  });
+  out.sort(function(a, b){ return a.date - b.date || b.bill.totalAmount - a.bill.totalAmount; });
+  return out;
+}
+
+function whenText(o){
+  if(o.kind === "overdue"){
+    var n = Math.abs(o.days);
+    return n === 1 ? "1 day late" : n + " days late";
+  }
+  if(o.days === 0) return "today";
+  if(o.days === 1) return "tomorrow";
+  return "in " + o.days + " days";
+}
+
+function evenSplit(people, total){
+  var n = people.length, rows = [];
+  if(!n) return rows;
+  var basePct = Math.floor((100 / n) * 100) / 100;
+  var baseAmt = Math.floor((round2(total) / n) * 100) / 100;
+  for(var i=0;i<n;i++){
+    rows.push({
+      personId: people[i].id, name: people[i].name,
+      percent: basePct, amount: baseAmt
+    });
+  }
+  rows[0].percent = round2(100 - basePct * (n - 1));            // remainder on first person
+  rows[0].amount  = round2(round2(total) - baseAmt * (n - 1));
+  return rows;
+}
+
+/* ============================================================
+   Rendering
+   ============================================================ */
+// Re-rendering a container from inside a change/blur handler can remove the
+// node the browser is still finishing with; run it on the next tick instead.
+function defer(fn){ setTimeout(fn, 0); }
+
+function renderAll(){
+  renderAlerts(); renderTiles(); renderFunds(); renderChecklist(); renderBills(); renderSubtitle();
+  if(!$("viewReports").hidden) renderReports();
+}
+
+function setView(v){
+  var isRep = v === "reports";
+  $("viewDash").hidden = isRep;
+  $("viewReports").hidden = !isRep;
+  $("tabDash").classList.toggle("on", !isRep);
+  $("tabRep").classList.toggle("on", isRep);
+  if(isRep) renderReports();
+}
+
+function notifySupported(){
+  return typeof Notification !== "undefined" && typeof Notification.requestPermission === "function";
+}
+
+function renderAlerts(){
+  var occ = dueOccurrences();
+  var overdue = occ.filter(function(o){ return o.kind === "overdue"; });
+  var soon = occ.filter(function(o){ return o.kind !== "overdue"; });
+  var lead = state.settings.leadDays;
+
+  var opts = [0,1,2,3,5,7,10,14].map(function(n){
+    return '<option value="' + n + '"' + (n === lead ? " selected" : "") + '>' +
+      (n === 0 ? "today only" : n + " day" + (n === 1 ? "" : "s")) + '</option>';
+  }).join("");
+
+  var bellOn = state.settings.notify && notifySupported() && Notification.permission === "granted";
+  var tools =
+    '<div class="abar-tools">' +
+      '<label for="leadSel">Look ahead</label>' +
+      '<select id="leadSel">' + opts + '</select>' +
+      '<button class="bell' + (bellOn ? " on" : "") + '" id="btnBell" title="Desktop notifications while this page is open">' +
+        (bellOn ? "&#128276; Reminders on" : "&#128277; Reminders off") + '</button>' +
+    '</div>';
+
+  function pills(list){
+    return '<div class="abar-items">' + list.map(function(o){
+      return '<button class="apill" data-mark="' + esc(o.bill.id) + '" data-ym="' + o.ym + '">' +
+        esc(o.bill.name) +
+        ' <span class="when">' + moneyWhole(o.bill.totalAmount) + ' &middot; ' + whenText(o) + '</span>' +
+        '<span class="mark">Mark paid</span>' +
+      '</button>';
+    }).join("") + '</div>';
+  }
+
+  var html = "";
+  if(overdue.length){
+    html += '<div class="abar od"><div class="abar-h">' +
+      '<strong>&#9888; ' + overdue.length + ' bill' + (overdue.length === 1 ? "" : "s") + ' past due</strong>' +
+      '<span class="sub">' + money(overdue.reduce(function(a,o){ return a + o.bill.totalAmount; }, 0)) + ' outstanding</span>' +
+      (soon.length ? "" : tools) +
+      '</div>' + pills(overdue) + '</div>';
+  }
+  if(soon.length){
+    var dueToday = soon.filter(function(o){ return o.days === 0; }).length;
+    html += '<div class="abar soon"><div class="abar-h">' +
+      '<strong>' + soon.length + ' coming up</strong>' +
+      '<span class="sub">' + (dueToday ? dueToday + " due today &middot; " : "") +
+        'next ' + (lead === 0 ? "today" : lead + " day" + (lead === 1 ? "" : "s")) + '</span>' +
+      tools + '</div>' + pills(soon) + '</div>';
+  }
+  if(!overdue.length && !soon.length){
+    html += '<div class="abar clear"><div class="abar-h">' +
+      '<strong>&#10003; All caught up</strong>' +
+      '<span class="sub">nothing unpaid or due in the next ' +
+        (lead === 0 ? "day" : lead + " day" + (lead === 1 ? "" : "s")) + '</span>' + tools + '</div></div>';
+  }
+  $("alerts").innerHTML = html;
+
+  var badge = overdue.length + soon.filter(function(o){ return o.days === 0; }).length;
+  document.title = (badge ? "(" + badge + ") " : "") + "Bills & Budgets";
+
+  $("leadSel").addEventListener("change", function(e){
+    state.settings.leadDays = Math.round(num(e.target.value));
+    save(); renderAlerts();
+  });
+  $("btnBell").addEventListener("click", toggleReminders);
+}
+
+function toggleReminders(){
+  if(!notifySupported()){
+    toast("This browser won't allow desktop notifications from a local file");
+    return;
+  }
+  if(state.settings.notify && Notification.permission === "granted"){
+    state.settings.notify = false; save(); renderAlerts();
+    toast("Reminders off");
+    return;
+  }
+  Notification.requestPermission().then(function(perm){
+    if(perm === "granted"){
+      state.settings.notify = true; save(); renderAlerts();
+      fireNotification(true);
+    }else{
+      toast("Notifications blocked — enable them for this page in your browser settings");
+    }
+  }).catch(function(){ toast("Notifications aren't available here"); });
+}
+
+// Fires at most once a calendar day while the page is open (force = user just
+// switched reminders on, so show them what it looks like right away).
+function fireNotification(force){
+  if(!state.settings.notify || !notifySupported() || Notification.permission !== "granted") return;
+  var today = dayKey();
+  if(!force && state.settings.lastNotify === today) return;
+
+  var occ = dueOccurrences();
+  var overdue = occ.filter(function(o){ return o.kind === "overdue"; });
+  var soon = occ.filter(function(o){ return o.kind !== "overdue"; });
+  if(!occ.length && !force) return;
+
+  var title, lines = [];
+  if(overdue.length){
+    title = overdue.length + " bill" + (overdue.length === 1 ? "" : "s") + " past due";
+    lines.push(overdue.map(function(o){ return o.bill.name + " (" + whenText(o) + ")"; }).join(", "));
+  }else if(soon.length){
+    title = soon.length + " bill" + (soon.length === 1 ? "" : "s") + " coming up";
+  }else{
+    title = "All caught up";
+    lines.push("Nothing unpaid or due in the next " + state.settings.leadDays + " days.");
+  }
+  if(soon.length){
+    lines.push("Next: " + soon.slice(0, 4).map(function(o){
+      return o.bill.name + " " + moneyWhole(o.bill.totalAmount) + " " + whenText(o);
+    }).join(" · "));
+  }
+
+  try{
+    var n = new Notification("Bills & Budgets — " + title, { body: lines.join("\n"), tag: "bills-daily", renotify: false });
+    n.onclick = function(){ window.focus(); n.close(); };
+  }catch(e){ console.warn(e); return; }
+
+  state.settings.lastNotify = today;
+  save();
+}
+
+function renderSubtitle(){
+  var active = state.bills.filter(function(b){ return b.isActive; }).length;
+  var c = contributions();
+  $("subtitle").textContent = active + " active bill" + (active === 1 ? "" : "s") +
+    " · " + money(c.total) + "/month household total";
+}
+
+function renderTiles(){
+  var c = contributions(), html = "";
+  c.people.forEach(function(p){
+    html += '<div class="tile"><div class="lbl">' + esc(p.name) + '</div>' +
+            '<div class="val">' + money(p.monthly) + '</div>' +
+            '<div class="sub">per month · ' + p.count + ' bill' + (p.count === 1 ? "" : "s") + '</div></div>';
+  });
+  html += '<div class="tile' + (c.unsplit > 0 ? "" : " muted") + '"><div class="lbl">Household (unsplit)</div>' +
+          '<div class="val">' + money(c.unsplit) + '</div>' +
+          '<div class="sub">per month · ' + c.unsplitCount + ' bill' + (c.unsplitCount === 1 ? "" : "s") + '</div></div>';
+  html += '<div class="tile total"><div class="lbl">Total</div>' +
+          '<div class="val">' + money(c.total) + '</div>' +
+          '<div class="sub">all active bills, per month</div></div>';
+  $("tiles").innerHTML = html;
+}
+
+function renderFunds(){
+  var list = state.bills.filter(function(b){ return b.isActive && isFunded(b) && b.totalAmount > 0; });
+  $("fundPanel").style.display = list.length ? "" : "none";
+  if(!list.length) return;
+
+  var cur = nowIdx();
+  $("funds").innerHTML = list.map(function(b){
+    var s = fundStatus(b);
+    var pctHave = Math.max(0, Math.min(100, s.need > 0 ? (s.balance / s.need * 100) : 0));
+    var pctSoon = Math.min(100 - pctHave, s.need > 0 ? (Math.max(0, s.projected - s.balance) / s.need * 100) : 0);
+    var dueDate = ymOfIdx(s.nextIdx);
+    var dueLabel = MONTH_ABBR[s.nextIdx % 12] + " " + Math.floor(s.nextIdx / 12) +
+      (b.dueDay != null ? " " + ordinal(b.dueDay) : "");
+    var whenLabel = s.monthsUntil === 0 ? "this month"
+      : s.monthsUntil === 1 ? "next month" : "in " + s.monthsUntil + " months";
+
+    var perPerson = "";
+    if(b.splits && b.splits.length){
+      var pctMode = usesPercent(b.splits);
+      perPerson = b.splits.map(function(sp){
+        var share = pctMode ? s.monthly * sp.percent / 100 : sp.amount / cycleLen(b.period);
+        return esc(sp.name) + " " + money(share);
+      }).join(" / ");
+    }
+
+    var stateLabel = s.state === "funded" ? "Funded" : s.state === "ontrack" ? "On track" : "Short";
+    return '<div class="fund">' +
+      '<div class="fund-top"><span class="fund-name">' + esc(b.name) + '</span>' +
+        '<span class="fund-state ' + s.state + '">' + stateLabel + '</span></div>' +
+      '<div class="fund-bal"><span class="b">' + money(s.balance) + '</span>' +
+        '<span class="of">set aside of ' + money(s.need) + '</span></div>' +
+      '<div class="fmeter"><i class="have" style="width:' + pctHave.toFixed(1) + '%"></i>' +
+        '<i class="due" style="width:' + pctSoon.toFixed(1) + '%"></i></div>' +
+      '<div class="fund-line">Due <b>' + dueLabel + '</b> · ' + whenLabel + '</div>' +
+      '<div class="fund-line">' +
+        (s.state === "short"
+          ? 'Short <b style="color:var(--danger)">' + money(s.shortBy) + '</b> at ' + money(s.monthly) + '/month'
+          : s.state === "funded"
+            ? 'Covered — the money is already banked'
+            : 'Adds ' + money(s.monthly * s.monthsUntil) + ' more before then') +
+      '</div>' +
+      (perPerson ? '<div class="fund-line">Monthly: <b>' + money(s.monthly) + '</b> — ' + perPerson + '</div>'
+                 : '<div class="fund-line">Monthly: <b>' + money(s.monthly) + '</b> (unsplit)</div>') +
+      '<div class="fund-foot">Actual balance' +
+        '<span class="adj"><b>$</b><input type="number" step="0.01" data-fund="' + esc(b.id) + '" ' +
+          'value="' + s.balance + '" aria-label="Set-aside balance for ' + esc(b.name) + '"></span>' +
+        '<span style="font-size:11.5px">as of ' + MONTH_ABBR[cur % 12] + '</span></div>' +
+    '</div>';
+  }).join("");
+}
+
+function sortedForChecklist(y, m){
+  return state.bills.filter(function(b){
+    return b.isActive && billsInMonth(b, y, m);
+  }).slice().sort(function(a,b){
+    var ad = a.dueDay == null ? 999 : a.dueDay;
+    var bd = b.dueDay == null ? 999 : b.dueDay;
+    if(ad !== bd) return ad - bd;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+var viewMonth = null;   // Date pinned to the 1st of the month being shown
+
+function viewYm(){ return ymKey(viewMonth); }
+function isCurrentMonth(){ return viewYm() === ymKey(); }
+
+function varianceCell(budget, actual){
+  if(actual == null) return '<span class="var none">—</span>';
+  var d = round2(actual - budget);
+  if(Math.abs(d) < 0.005) return '<span class="var none">on budget</span>';
+  return '<span class="var ' + (d > 0 ? "over" : "under") + '">' +
+    (d > 0 ? "+" : "−") + money(Math.abs(d)).replace("$", "$") + '</span>';
+}
+
+function renderChecklist(){
+  var now = new Date();
+  if(!viewMonth) viewMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  var ym = viewYm(), today = now.getDate(), cur = isCurrentMonth();
+  var y = viewMonth.getFullYear(), m = viewMonth.getMonth();
+  var list = sortedForChecklist(y, m);
+
+  $("monthLabel").textContent = viewMonth.toLocaleDateString('en-US', { month:'long', year:'numeric' });
+  $("monthToday").style.visibility = cur ? "hidden" : "visible";
+
+  var paid = list.filter(function(b){ return !!b.paidMonths[ym]; }).length;
+  var recorded = list.filter(function(b){ return b.actuals[ym] != null; }).length;
+  $("paidCounter").innerHTML = paid + " of " + list.length + " paid" +
+    (recorded ? ' &middot; ' + recorded + " actual" + (recorded === 1 ? "" : "s") + " recorded" : "") +
+    (cur ? "" : ' &middot; <span class="cl-head-note">past month</span>');
+  $("progressBar").style.width = (list.length ? (paid / list.length * 100) : 0) + "%";
+
+  if(!list.length){ $("checklist").innerHTML = '<div class="empty">No active bills yet.</div>'; return; }
+
+  $("checklist").innerHTML = list.map(function(b){
+    var isPaid = !!b.paidMonths[ym];
+    var eff = b.dueDay == null ? null : effDue(b.dueDay, y, m);
+    var past = viewMonth < new Date(now.getFullYear(), now.getMonth(), 1);
+    var overdue = !isPaid && eff != null && (past || (cur && eff < today));
+    var dueToday = !isPaid && cur && eff != null && eff === today;
+    var cls = "cl-row" + (isPaid ? " paid" : overdue ? " overdue" : dueToday ? " today" : "");
+    var flag = overdue ? '<span class="cl-flag od">' + (past ? "Unpaid" : "Past due") + '</span>'
+             : dueToday ? '<span class="cl-flag td">Due today</span>' : '';
+    var act = b.actuals[ym];
+    return '<div class="' + cls + '">' +
+      '<input type="checkbox" data-paid="' + esc(b.id) + '"' + (isPaid ? " checked" : "") +
+        ' aria-label="Mark ' + esc(b.name) + ' paid">' +
+      '<span class="cl-name">' + esc(b.name) + '</span>' + flag +
+      '<span class="cl-due">' + (b.dueDay != null ? "Due " + ordinal(b.dueDay) : "No due day") + '</span>' +
+      '<span class="cl-amt">' + money(b.totalAmount) + '</span>' +
+      '<span class="cl-actual"><b>$</b><input type="number" step="0.01" data-actual="' + esc(b.id) + '" ' +
+        'placeholder="' + b.totalAmount.toFixed(2) + '" value="' + (act != null ? act : "") + '" ' +
+        'aria-label="Actual amount paid for ' + esc(b.name) + '"></span>' +
+      varianceCell(b.totalAmount, act == null ? null : act) +
+    '</div>';
+  }).join("");
+}
+
+function shiftMonth(delta){
+  viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + delta, 1);
+  renderChecklist();
+}
+
+function billCard(b){
+  var chips = '<span class="chip ' + b.period + '">' + PERIODS[b.period].label + '</span>';
+  if(b.dueDay != null) chips += '<span class="chip due">Due: ' + ordinal(b.dueDay) + '</span>';
+  if(isFunded(b)) chips += '<span class="chip due">' + billingMonthList(b).join(" · ") + '</span>';
+  if(b.isActive && b.paidMonths[ymKey()]) chips += '<span class="chip paid">Paid</span>';
+  return '<article class="card' + (b.isActive ? "" : " inactive") + '">' +
+    '<div class="card-top"><div class="card-name">' + esc(b.name) + '</div>' +
+      '<div class="card-actions">' +
+        '<button class="icon" data-edit="' + esc(b.id) + '" title="Edit" aria-label="Edit ' + esc(b.name) + '">&#9998;</button>' +
+        '<button class="icon del" data-del="' + esc(b.id) + '" title="Delete" aria-label="Delete ' + esc(b.name) + '">&#128465;</button>' +
+      '</div></div>' +
+    '<div class="amount">' + moneyWhole(b.totalAmount) + ' <span class="per">/ ' + PERIODS[b.period].label.toLowerCase() + '</span></div>' +
+    '<div class="chips">' + chips + '</div>' +
+    '<div class="split-cap">' + esc(splitSummary(b)) + '</div>' +
+  '</article>';
+}
+
+function renderBills(){
+  var active = state.bills.filter(function(b){ return b.isActive; });
+  var inactive = state.bills.filter(function(b){ return !b.isActive; });
+  active.sort(function(a,b){ return b.totalAmount * factorOf(b.period) - a.totalAmount * factorOf(a.period); });
+
+  $("billGrid").innerHTML = active.length ? active.map(billCard).join("")
+    : '<div class="empty">No active bills. Click “+ Add Bill” to start.</div>';
+  $("activeNote").textContent = active.length + " bill" + (active.length === 1 ? "" : "s");
+  $("inactivePanel").style.display = inactive.length ? "" : "none";
+  $("inactiveGrid").innerHTML = inactive.map(billCard).join("");
+}
+
+/* ============================================================
+   Reports
+   ============================================================ */
+var MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+var reportYear = null;
+
+function moneyShort(n){
+  if(n >= 1000) return "$" + (Math.round(n / 100) / 10) + "k";
+  return "$" + Math.round(n);
+}
+function yearsWithData(){
+  var ys = {};
+  ys[new Date().getFullYear()] = true;
+  state.bills.forEach(function(b){
+    Object.keys(b.actuals).forEach(function(k){ ys[parseInt(k.slice(0,4), 10)] = true; });
+  });
+  return Object.keys(ys).map(Number).sort(function(a,b){ return b - a; });
+}
+
+function reportData(year){
+  var now = new Date();
+  var elapsed = year < now.getFullYear() ? 12 : (year > now.getFullYear() ? 0 : now.getMonth() + 1);
+  var rows = state.bills.filter(function(b){
+    if(b.isActive) return true;
+    return Object.keys(b.actuals).some(function(k){ return k.slice(0,4) === String(year); });
+  }).map(function(b){
+    var perMonth = b.isActive ? round2(monthlyOf(b)) : 0;
+    var months = [], actualTotal = 0, recorded = 0;
+    for(var m = 0; m < 12; m++){
+      var k = year + "-" + String(m+1).padStart(2, "0");
+      var v = b.actuals[k];
+      v = (v == null ? null : round2(v));
+      months.push(v);
+      if(v != null){ actualTotal += v; recorded++; }
+    }
+    return {
+      bill: b, perMonth: perMonth, months: months,
+      actualTotal: round2(actualTotal), recorded: recorded,
+      budgetYtd: round2(perMonth * elapsed)
+    };
+  }).sort(function(a, b){ return b.perMonth - a.perMonth || b.actualTotal - a.actualTotal; });
+
+  // Cash basis: the payment lands in the month it was made.
+  // Accrual basis: a quarterly/yearly payment is spread back across the months
+  // it covers, so it lines up with what you set aside each month.
+  var byMonth = [], accrual = [];
+  for(var m = 0; m < 12; m++){
+    var act = null, any = false, bud = 0;
+    rows.forEach(function(r){
+      bud += r.perMonth;
+      if(r.months[m] != null){ any = true; act = (act || 0) + r.months[m]; }
+    });
+    byMonth.push({ budget: round2(bud), actual: any ? round2(act) : null });
+    accrual.push({ budget: round2(bud), actual: null, _sum: 0, _any: false });
+  }
+  rows.forEach(function(r){
+    var C = cycleLen(r.bill.period);
+    r.months.forEach(function(v, m){
+      if(v == null) return;
+      var per = v / C;
+      for(var k = 0; k < C; k++){
+        var target = m - k;                  // the payment covers the C months ending here
+        if(target < 0 || target > 11) continue;
+        accrual[target]._sum += per;
+        accrual[target]._any = true;
+      }
+    });
+  });
+  accrual.forEach(function(a){ a.actual = a._any ? round2(a._sum) : null; });
+  return {
+    year: year, elapsed: elapsed, rows: rows, byMonth: byMonth, accrual: accrual,
+    budgetYtd: round2(rows.reduce(function(a,r){ return a + r.budgetYtd; }, 0)),
+    actualYtd: round2(rows.reduce(function(a,r){ return a + r.actualTotal; }, 0)),
+    budgetYear: round2(rows.reduce(function(a,r){ return a + r.perMonth * 12; }, 0)),
+    recorded: rows.reduce(function(a,r){ return a + r.recorded; }, 0),
+    slots: rows.length * elapsed
+  };
+}
+
+function renderReports(){
+  var years = yearsWithData();
+  if(reportYear == null || years.indexOf(reportYear) === -1) reportYear = years[0];
+  $("yearSel").innerHTML = years.map(function(y){
+    return '<option value="' + y + '"' + (y === reportYear ? " selected" : "") + '>' + y + '</option>';
+  }).join("");
+
+  var d = reportData(reportYear);
+  var variance = round2(d.actualYtd - d.budgetYtd);
+  var pct = d.budgetYtd > 0 ? Math.round(variance / d.budgetYtd * 1000) / 10 : 0;
+
+  $("reportTiles").innerHTML =
+    '<div class="tile"><div class="lbl">Budgeted to date</div><div class="val">' + money(d.budgetYtd) + '</div>' +
+      '<div class="sub">' + d.elapsed + ' month' + (d.elapsed === 1 ? "" : "s") + ' of ' + reportYear + '</div></div>' +
+    '<div class="tile"><div class="lbl">Actual recorded</div><div class="val">' + money(d.actualYtd) + '</div>' +
+      '<div class="sub">' + d.recorded + ' of ' + d.slots + ' bill-months entered</div></div>' +
+    '<div class="tile"><div class="lbl">Variance</div><div class="val" style="color:' +
+      (Math.abs(variance) < 0.005 ? "var(--muted)" : variance > 0 ? "var(--danger)" : "var(--ok)") + '">' +
+      (variance > 0 ? "+" : variance < 0 ? "−" : "") + money(Math.abs(variance)) + '</div>' +
+      '<div class="sub">' + (variance > 0 ? "over" : variance < 0 ? "under" : "on") + ' budget · ' +
+      (pct > 0 ? "+" : "") + pct + '%</div></div>' +
+    '<div class="tile total"><div class="lbl">Full-year budget</div><div class="val">' + money(d.budgetYear) + '</div>' +
+      '<div class="sub">all 12 months at today\'s amounts</div></div>';
+
+  var accrualOn = state.settings.basis !== "cash";
+  $("basisAccrual").classList.toggle("on", accrualOn);
+  $("basisCash").classList.toggle("on", !accrualOn);
+  $("legendKeys").innerHTML =
+    '<span style="margin-right:16px"><i style="background:var(--series-budget)"></i>Budgeted</span>' +
+    '<span><i style="background:var(--series-actual)"></i>Actual</span>';
+
+  drawChart(d, accrualOn);
+
+  $("chartCap").textContent = accrualOn
+    ? "Accrual basis: a quarterly or yearly payment is spread back across the months it covers, matching what you set aside. "
+      + "Payments covering months in the previous year are trimmed at January."
+    : "Cash basis: each payment lands in the month it was actually made, so quarterly and yearly bills spike. "
+      + "Budgeted is always the normalized monthly figure.";
+
+  renderBillTable(d);
+  $("tableCap").textContent = d.rows.length
+    ? "Blank cells are months with nothing recorded — they count as $0 in the totals above. " +
+      "Scroll the table sideways for later months, the annual totals and the trend line."
+    : "";
+}
+
+/* Grouped bars: budget vs actual, one group per month. */
+function drawChart(d, accrualOn){
+  var series = accrualOn ? d.accrual : d.byMonth;
+  var W = 780, H = 250, padL = 58, padR = 12, padT = 12, padB = 30;
+  var plotW = W - padL - padR, plotH = H - padT - padB;
+  var gw = plotW / 12;
+  var bw = Math.min(15, (gw - 10) / 2);
+
+  var max = 0;
+  series.forEach(function(m){
+    max = Math.max(max, m.budget, m.actual == null ? 0 : m.actual);
+  });
+  if(max <= 0) max = 100;
+  var step = Math.pow(10, Math.floor(Math.log10(max / 4)));
+  var niceStep = [1,2,2.5,5,10].map(function(f){ return f * step; })
+    .filter(function(s){ return max / s <= 5.5; })[0] || step * 10;
+  var top = Math.ceil(max / niceStep) * niceStep;
+  var y = function(v){ return padT + plotH - (v / top) * plotH; };
+
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Budgeted versus actual by month for ' + d.year + '">';
+
+  // gridlines + y labels (recessive)
+  for(var g = 0; g <= 4; g++){
+    var v = top * g / 4, yy = y(v);
+    svg += '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + yy + '" y2="' + yy +
+           '" stroke="var(--grid)" stroke-width="1"/>' +
+           '<text x="' + (padL - 8) + '" y="' + (yy + 4) + '" text-anchor="end" font-size="11" fill="var(--ink-2)">' +
+           moneyShort(v) + '</text>';
+  }
+
+  for(var m = 0; m < 12; m++){
+    var gx = padL + gw * m;
+    var cx = gx + gw / 2;
+    svg += '<rect class="hoverband" data-mi="' + m + '" x="' + gx + '" y="' + padT + '" width="' + gw + '" height="' + plotH + '"/>';
+    var bud = series[m].budget, act = series[m].actual;
+    var x1 = cx - bw - 1, x2 = cx + 1;
+    if(bud > 0) svg += barPath(x1, y(bud), bw, padT + plotH - y(bud), 'var(--series-budget)');
+    if(act != null && act > 0) svg += barPath(x2, y(act), bw, padT + plotH - y(act), 'var(--series-actual)');
+    svg += '<text x="' + cx + '" y="' + (H - 10) + '" text-anchor="middle" font-size="11" fill="var(--ink-2)">' +
+           MONTH_ABBR[m] + '</text>';
+  }
+  // baseline
+  svg += '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y(0) + '" y2="' + y(0) +
+         '" stroke="var(--ink-2)" stroke-width="1"/>';
+  svg += '</svg>';
+  $("chart").innerHTML = svg;
+
+  var tip = $("vtip"), scroll = $("chartScroll");
+  $("chart").querySelectorAll(".hoverband").forEach(function(band){
+    band.addEventListener("mousemove", function(ev){
+      var i = +band.getAttribute("data-mi"), mm = series[i];
+      var diff = mm.actual == null ? null : round2(mm.actual - mm.budget);
+      tip.innerHTML = '<b>' + MONTH_ABBR[i] + ' ' + d.year + '</b>' +
+        '<i style="background:var(--series-budget)"></i>Budgeted ' + money(mm.budget) + '<br>' +
+        '<i style="background:var(--series-actual)"></i>Actual ' + (mm.actual == null ? "not recorded" : money(mm.actual)) +
+        (diff == null ? "" : '<br>' + (diff > 0 ? "Over by " : diff < 0 ? "Under by " : "On budget") +
+          (diff === 0 ? "" : money(Math.abs(diff))));
+      tip.style.opacity = 1;
+      var r = scroll.getBoundingClientRect();
+      var x = ev.clientX - r.left + scroll.scrollLeft + 14;
+      if(x + tip.offsetWidth > scroll.scrollLeft + r.width) x = x - tip.offsetWidth - 28;
+      tip.style.left = x + "px";
+      tip.style.top = Math.max(0, ev.clientY - r.top - 10) + "px";
+    });
+    band.addEventListener("mouseleave", function(){ tip.style.opacity = 0; });
+  });
+}
+
+function barPath(x, yTop, w, h, fill){
+  var r = Math.min(4, w / 2, h);
+  if(h <= 0.5) return "";
+  return '<path d="M' + x + ' ' + (yTop + h) + ' L' + x + ' ' + (yTop + r) +
+         ' Q' + x + ' ' + yTop + ' ' + (x + r) + ' ' + yTop +
+         ' L' + (x + w - r) + ' ' + yTop + ' Q' + (x + w) + ' ' + yTop + ' ' + (x + w) + ' ' + (yTop + r) +
+         ' L' + (x + w) + ' ' + (yTop + h) + ' Z" fill="' + fill + '"/>';
+}
+
+function sparkline(months){
+  var pts = [], W = 84, H = 20, max = 0, min = Infinity;
+  months.forEach(function(v){ if(v != null){ max = Math.max(max, v); min = Math.min(min, v); } });
+  if(max === 0 && min === Infinity) return '<span style="color:var(--muted)">—</span>';
+  if(max === min){ max = min + 1; }
+  months.forEach(function(v, i){
+    if(v == null) return;
+    pts.push([2 + (W - 4) * (i / 11), H - 3 - (H - 6) * ((v - min) / (max - min))]);
+  });
+  if(pts.length < 2) return '<span style="color:var(--muted)">—</span>';
+  var dAttr = pts.map(function(p, i){ return (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" ");
+  return '<svg class="spark" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">' +
+    '<path d="' + dAttr + '" fill="none" stroke="var(--series-actual)" stroke-width="2" ' +
+    'stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<circle cx="' + pts[pts.length-1][0].toFixed(1) + '" cy="' + pts[pts.length-1][1].toFixed(1) +
+    '" r="2.5" fill="var(--series-actual)"/></svg>';
+}
+
+function renderBillTable(d){
+  if(!d.rows.length){
+    $("billTable").innerHTML = '<tbody><tr><td class="rep-empty">No bills to report on for ' + d.year + '.</td></tr></tbody>';
+    return;
+  }
+  var head = '<thead><tr><th>Bill</th><th>Budget/mo</th>' +
+    MONTH_ABBR.map(function(m){ return '<th>' + m + '</th>'; }).join("") +
+    '<th>Actual</th><th>Budget</th><th>Variance</th><th>Trend</th></tr></thead>';
+
+  var body = '<tbody>' + d.rows.map(function(r){
+    var v = round2(r.actualTotal - r.budgetYtd);
+    var vc = r.recorded === 0 ? "none" : v > 0 ? "over" : v < 0 ? "under" : "none";
+    return '<tr>' +
+      '<td><span class="bname">' + esc(r.bill.name) + '</span>' +
+        (r.bill.isActive ? "" : ' <span class="bsub">inactive</span>') +
+        '<br><span class="bsub">' + PERIODS[r.bill.period].label + " · " + money(r.bill.totalAmount) + '</span></td>' +
+      '<td>' + (r.bill.isActive ? money(r.perMonth) : '<span style="color:var(--muted)">—</span>') + '</td>' +
+      r.months.map(function(v, i){
+        var k = d.year + "-" + String(i+1).padStart(2, "0");
+        var offCycle = isFunded(r.bill) && !billsInMonth(r.bill, d.year, i);
+        return '<td class="mcell' + (offCycle ? " offcycle" : "") + '"' +
+          (offCycle ? ' title="' + esc(r.bill.name) + ' is not billed in ' + MONTH_ABBR[i] + '"' : "") +
+          '><input type="number" step="0.01" data-cell="' + esc(r.bill.id) + '" data-ym="' + k +
+          '" value="' + (v == null ? "" : v) + '" placeholder="' + (offCycle ? "·" : "—") +
+          '" aria-label="' + esc(r.bill.name) + ' ' + MONTH_ABBR[i] + '"></td>';
+      }).join("") +
+      '<td><b>' + money(r.actualTotal) + '</b></td>' +
+      '<td>' + money(r.budgetYtd) + '</td>' +
+      '<td><span class="var ' + vc + '">' + (r.recorded === 0 ? "—" :
+        (v > 0 ? "+" : v < 0 ? "−" : "") + money(Math.abs(v))) + '</span></td>' +
+      '<td>' + sparkline(r.months) + '</td>' +
+    '</tr>';
+  }).join("") + '</tbody>';
+
+  var totV = round2(d.actualYtd - d.budgetYtd);
+  var foot = '<tfoot><tr><td>Total</td><td>' + money(round2(d.budgetYear / 12)) + '</td>' +
+    d.byMonth.map(function(m){
+      return '<td>' + (m.actual == null ? '<span style="color:var(--muted)">—</span>' : money(m.actual)) + '</td>';
+    }).join("") +
+    '<td>' + money(d.actualYtd) + '</td><td>' + money(d.budgetYtd) + '</td>' +
+    '<td><span class="var ' + (totV > 0 ? "over" : totV < 0 ? "under" : "none") + '">' +
+      (totV > 0 ? "+" : totV < 0 ? "−" : "") + money(Math.abs(totV)) + '</span></td><td></td></tr></tfoot>';
+
+  $("billTable").innerHTML = head + body + foot;
+}
+
+function setActual(billId, ym, raw){
+  var b = state.bills.filter(function(x){ return x.id === billId; })[0];
+  if(!b) return;
+  var t = String(raw).trim();
+  if(t === "") delete b.actuals[ym];
+  else{
+    var v = parseFloat(t);
+    if(!isFinite(v)) return;
+    b.actuals[ym] = round2(v);
+  }
+  save();
+}
+
+/* ============================================================
+   Bill modal
+   ============================================================ */
+var editingId = null;
+var splitMode = "percent";   // 'percent' | 'amount'
+
+function openBillModal(id){
+  editingId = id || null;
+  var b = id ? state.bills.filter(function(x){ return x.id === id; })[0] : null;
+
+  $("billModalTitle").textContent = b ? "Edit Bill" : "Add Bill";
+  $("fName").value = b ? b.name : "";
+  $("fPeriod").value = b ? b.period : "MONTHLY";
+  $("fAmount").value = b ? String(b.totalAmount) : "";
+  $("fDueDay").value = (b && b.dueDay != null) ? String(b.dueDay) : "";
+  $("fActive").checked = b ? b.isActive : true;
+  $("billError").textContent = "";
+
+  $("fBillMonth").innerHTML = MONTH_ABBR.map(function(mn, i){
+    return '<option value="' + (i+1) + '">' + mn + '</option>';
+  }).join("");
+  $("fBillMonth").value = String((b && b.billMonth) || (new Date().getMonth() + 1));
+  syncBillMonthField();
+
+  var hasSplit = !!(b && b.splits && b.splits.length);
+  $("fSplitOn").checked = b ? hasSplit : true;
+  splitMode = (hasSplit && !usesPercent(b.splits)) ? "amount" : "percent";
+
+  buildSplitRows(b);
+  syncSplitUI();
+  $("billOverlay").classList.add("open");
+  setTimeout(function(){ $("fName").focus(); }, 30);
+}
+function closeBillModal(){ $("billOverlay").classList.remove("open"); editingId = null; }
+
+// Only quarterly and yearly bills need a cycle anchor.
+function syncBillMonthField(){
+  var p = $("fPeriod").value;
+  var show = p === "QUARTERLY" || p === "YEARLY";
+  $("billMonthField").hidden = !show;
+  if(!show) return;
+  var bm = parseInt($("fBillMonth").value, 10) || 1;
+  var fake = { period: p, billMonth: bm };
+  var months = billingMonthList(fake).join(" · ");
+  var amt = currentTotal();
+  $("billMonthHint").innerHTML = p === "YEARLY"
+    ? "Billed once a year in " + MONTH_ABBR[bm-1] + ". Set aside " +
+      money(amt / 12) + "/month to be funded by then."
+    : "Billed in " + months + ". Set aside " + money(amt / 3) +
+      "/month to be funded by each due date.";
+}
+
+function currentTotal(){ return round2(num($("fAmount").value)); }
+
+// Build the per-person input rows. Existing split values are preserved;
+// people missing from an existing split come in at zero.
+function buildSplitRows(bill){
+  var total = bill ? bill.totalAmount : currentTotal();
+  var base;
+  if(bill && bill.splits && bill.splits.length){
+    base = state.people.map(function(p){
+      var s = bill.splits.filter(function(x){ return x.personId === p.id; })[0];
+      return { personId:p.id, name:p.name, percent: s ? s.percent : 0, amount: s ? s.amount : 0 };
+    });
+  }else{
+    base = evenSplit(state.people, total);
+  }
+  $("splitRows").innerHTML = base.map(function(r){
+    return '<div class="srow">' +
+      '<div class="nm">' + esc(r.name) + '</div>' +
+      '<div class="wrap-in ' + (splitMode === "percent" ? "pct" : "amt") + '">' +
+        '<b>' + (splitMode === "percent" ? "%" : "$") + '</b>' +
+        '<input type="number" step="0.01" min="0" data-pid="' + esc(r.personId) + '" ' +
+          'value="' + (splitMode === "percent" ? r.percent : r.amount) + '">' +
+      '</div>' +
+      '<div class="calc" data-calc="' + esc(r.personId) + '">—</div>' +
+    '</div>';
+  }).join("");
+  $("splitRows").querySelectorAll("input").forEach(function(inp){
+    inp.addEventListener("input", syncSplitUI);
+  });
+}
+
+function readRows(){
+  return Array.prototype.map.call($("splitRows").querySelectorAll("input[data-pid]"), function(inp){
+    var pid = inp.getAttribute("data-pid");
+    var person = state.people.filter(function(p){ return p.id === pid; })[0];
+    return { personId: pid, name: person ? person.name : pid, value: num(inp.value) };
+  });
+}
+
+function writeRows(rows){
+  rows.forEach(function(r){
+    var inp = $("splitRows").querySelector('input[data-pid="' + r.personId + '"]');
+    if(inp) inp.value = (splitMode === "percent" ? r.percent : r.amount);
+  });
+}
+
+// Live recompute: computed column, running total, save-blocking state.
+function syncSplitUI(){
+  var on = $("fSplitOn").checked;
+  $("splitRows").style.display = on ? "" : "none";
+  $("modeToggle").style.display = on ? "" : "none";
+  document.querySelector(".split-foot").style.display = on ? "" : "none";
+  $("modePct").classList.toggle("on", splitMode === "percent");
+  $("modeAmt").classList.toggle("on", splitMode === "amount");
+
+  if(!on){
+    $("splitNote").textContent = "This bill counts toward the “Household (unsplit)” bucket.";
+    $("billSave").disabled = false;
+    return;
+  }
+
+  var total = currentTotal(), rows = readRows(), sum = 0;
+  rows.forEach(function(r){ sum += r.value; });
+  sum = round2(sum);
+
+  rows.forEach(function(r){
+    var el = $("splitRows").querySelector('[data-calc="' + r.personId + '"]');
+    if(!el) return;
+    el.textContent = splitMode === "percent"
+      ? money(total * r.value / 100)
+      : (total > 0 ? pctText(r.value / total * 100) : "—");
+  });
+
+  var summary = $("splitSummary"), note = $("splitNote"), blocked = false;
+  if(splitMode === "percent"){
+    var ok = Math.abs(sum - 100) <= 0.01;
+    summary.className = ok ? "sum-ok" : "sum-bad";
+    summary.textContent = "Total: " + pctText(sum) + " of 100%";
+    note.textContent = ok ? "" : "Percents must add up to 100% before you can save.";
+    note.style.color = "var(--danger)";
+    blocked = !ok;
+  }else{
+    var ok2 = Math.abs(sum - total) <= 0.01;
+    summary.className = ok2 ? "sum-ok" : "sum-warn";
+    summary.textContent = "Total: " + money(sum) + " of " + money(total);
+    note.textContent = ok2 ? "" :
+      "Heads up: the amounts " + (sum > total ? "exceed" : "fall short of") + " the bill total by " +
+      money(Math.abs(sum - total)) + ". You can still save.";
+    note.style.color = "var(--warn)";
+    blocked = false;
+  }
+  $("billSave").disabled = blocked;
+  $("billSave").style.opacity = blocked ? .5 : 1;
+}
+
+function setMode(mode){
+  if(mode === splitMode) return;
+  var total = currentTotal(), rows = readRows();
+  var converted = rows.map(function(r){
+    return splitMode === "percent"
+      ? { personId:r.personId, percent:r.value, amount: round2(total * r.value / 100) }
+      : { personId:r.personId, amount:r.value, percent: total > 0 ? round2(r.value / total * 100) : 0 };
+  });
+  splitMode = mode;
+  // Re-render rows so the prefix/suffix flips, then fill in the converted values.
+  $("splitRows").querySelectorAll(".wrap-in").forEach(function(w){
+    w.classList.toggle("pct", splitMode === "percent");
+    w.classList.toggle("amt", splitMode === "amount");
+    w.querySelector("b").textContent = splitMode === "percent" ? "%" : "$";
+  });
+  writeRows(converted);
+  syncSplitUI();
+}
+
+function saveBill(){
+  var name = $("fName").value.trim();
+  var total = currentTotal();
+  var err = "";
+  if(!name) err = "Name is required.";
+  else if(!$("fAmount").value.trim()) err = "Total amount is required.";
+  else if(total < 0) err = "Total amount cannot be negative.";
+  if(err){ $("billError").textContent = err; return; }
+
+  var dueRaw = $("fDueDay").value.trim();
+  var dueDay = dueRaw === "" ? null : Math.round(num(dueRaw));
+  if(dueDay != null && (dueDay < 1 || dueDay > 31)){
+    $("billError").textContent = "Due day must be between 1 and 31."; return;
+  }
+
+  var splits = null;
+  if($("fSplitOn").checked && state.people.length){
+    var rows = readRows();
+    splits = rows.map(function(r){
+      return splitMode === "percent"
+        ? { personId:r.personId, name:r.name, percent: round2(r.value), amount: round2(total * r.value / 100) }
+        : { personId:r.personId, name:r.name, amount: round2(r.value),
+            percent: total > 0 ? round2(r.value / total * 100) : 0 };
+    });
+    if(splitMode === "percent"){
+      // Fix penny drift so the shares add up to the bill total exactly.
+      var sumAmt = round2(splits.reduce(function(a,s){ return a + s.amount; }, 0));
+      if(Math.abs(sumAmt - total) >= 0.01 && splits.length){
+        splits[0].amount = round2(splits[0].amount + (total - sumAmt));
+      }
+    }
+  }
+
+  var period = $("fPeriod").value;
+  var newCycle = (period === "QUARTERLY" || period === "YEARLY");
+  var billMonth = newCycle ? (parseInt($("fBillMonth").value, 10) || 1) : null;
+
+  var bill = editingId ? state.bills.filter(function(b){ return b.id === editingId; })[0] : null;
+  if(bill){
+    var cycleChanged = bill.period !== period || bill.billMonth !== billMonth;
+    bill.name = name; bill.totalAmount = total; bill.period = period;
+    bill.dueDay = dueDay; bill.isActive = $("fActive").checked; bill.splits = splits;
+    bill.billMonth = billMonth;
+    if(!newCycle) bill.fund = null;
+    else if(!bill.fund || cycleChanged) seedFund(bill, nowIdx());
+  }else{
+    var nb = {
+      id: uid("bill"), name:name, totalAmount:total, period:period,
+      dueDay:dueDay, isActive:$("fActive").checked, splits:splits,
+      paidMonths:{}, actuals:{}, billMonth:billMonth, fund:null
+    };
+    if(newCycle) seedFund(nb, nowIdx());
+    state.bills.push(nb);
+  }
+  save(); renderAll(); closeBillModal();
+  toast(bill ? "Bill updated" : "Bill added");
+}
+
+/* ============================================================
+   People modal
+   ============================================================ */
+var draftPeople = [];
+
+function openPeopleModal(){
+  draftPeople = state.people.map(function(p){ return { id:p.id, name:p.name }; });
+  renderPeopleRows();
+  $("peopleOverlay").classList.add("open");
+}
+function renderPeopleRows(){
+  $("peopleRows").innerHTML = draftPeople.map(function(p, i){
+    return '<div class="people-row">' +
+      '<input type="text" data-pidx="' + i + '" value="' + esc(p.name) + '" placeholder="Name">' +
+      '<button class="icon del" data-prm="' + i + '" title="Remove">&#10005;</button>' +
+    '</div>';
+  }).join("") || '<div class="hint">No people yet — add at least one.</div>';
+
+  $("peopleRows").querySelectorAll("input[data-pidx]").forEach(function(inp){
+    inp.addEventListener("input", function(){ draftPeople[+inp.getAttribute("data-pidx")].name = inp.value; });
+  });
+  $("peopleRows").querySelectorAll("[data-prm]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      draftPeople.splice(+btn.getAttribute("data-prm"), 1);
+      renderPeopleRows();
+    });
+  });
+}
+function savePeople(){
+  var people = draftPeople
+    .map(function(p){ return { id: p.id || uid("person"), name: (p.name || "").trim() }; })
+    .filter(function(p){ return p.name; });
+  if(!people.length){ toast("Keep at least one person"); return; }
+
+  var keep = {};
+  people.forEach(function(p){ keep[p.id] = p.name; });
+
+  state.bills.forEach(function(b){
+    if(!b.splits) return;
+    var kept = b.splits.filter(function(s){ return s.personId in keep; });
+    var dropped = b.splits.filter(function(s){ return !(s.personId in keep); });
+    if(!kept.length){ b.splits = null; return; }
+    kept.forEach(function(s){ s.name = keep[s.personId]; });
+
+    if(dropped.length){
+      var wasPct = usesPercent(b.splits);
+      // Redistribute the removed people's share proportionally across those who remain.
+      var freedPct = dropped.reduce(function(a,s){ return a + s.percent; }, 0);
+      var freedAmt = dropped.reduce(function(a,s){ return a + s.amount; }, 0);
+      var basePct  = kept.reduce(function(a,s){ return a + s.percent; }, 0);
+      var baseAmt  = kept.reduce(function(a,s){ return a + s.amount; }, 0);
+      kept.forEach(function(s){
+        s.percent = round2(s.percent + (basePct > 0 ? freedPct * (s.percent / basePct) : freedPct / kept.length));
+        s.amount  = round2(s.amount  + (baseAmt > 0 ? freedAmt * (s.amount  / baseAmt)  : freedAmt / kept.length));
+      });
+      var pSum = round2(kept.reduce(function(a,s){ return a + s.percent; }, 0));
+      if(Math.abs(pSum - 100) < 1 && pSum !== 100) kept[0].percent = round2(kept[0].percent + (100 - pSum));
+      if(wasPct){
+        // Percent-driven split: re-derive dollars so they land exactly on the bill total.
+        kept.forEach(function(s){ s.amount = round2(b.totalAmount * s.percent / 100); });
+        var aSum = round2(kept.reduce(function(a,s){ return a + s.amount; }, 0));
+        if(Math.abs(aSum - b.totalAmount) >= 0.01) kept[0].amount = round2(kept[0].amount + (b.totalAmount - aSum));
+      }
+    }
+    b.splits = kept;
+  });
+
+  state.people = people;
+  save(); renderAll();
+  $("peopleOverlay").classList.remove("open");
+  toast("People updated");
+}
+
+/* ============================================================
+   Confirm dialog
+   ============================================================ */
+var confirmAction = null;
+function askConfirm(title, body, onYes){
+  $("confirmTitle").textContent = title;
+  $("confirmBody").textContent = body;
+  confirmAction = onYes;
+  $("confirmOverlay").classList.add("open");
+}
+
+/* ============================================================
+   Import / export
+   ============================================================ */
+function exportJSON(){
+  var blob = new Blob([JSON.stringify(state, null, 2)], { type:"application/json" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  var d = new Date();
+  a.href = url;
+  a.download = "bills-budgets-" + d.getFullYear() + String(d.getMonth()+1).padStart(2,"0") +
+               String(d.getDate()).padStart(2,"0") + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  toast("Exported");
+}
+function importJSON(file){
+  var reader = new FileReader();
+  reader.onload = function(){
+    try{
+      var parsed = JSON.parse(String(reader.result));
+      var next = normalize(parsed);
+      if(!next.bills.length && !parsed.bills) throw new Error("No bills found in that file");
+      askConfirm("Replace all data?",
+        "Importing will overwrite the " + state.bills.length + " bill(s) currently stored in this browser with " +
+        next.bills.length + " bill(s) from the file.",
+        function(){ state = next; save(); renderAll(); toast("Imported"); });
+      $("confirmYes").textContent = "Import";
+    }catch(e){
+      toast("That file could not be read as valid JSON");
+      console.warn(e);
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ============================================================
+   Theme + toast
+   ============================================================ */
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  $("btnTheme").textContent = "Theme: " + t.charAt(0).toUpperCase() + t.slice(1);
+  try{ localStorage.setItem(THEME_KEY, t); }catch(e){}
+}
+var toastTimer = null;
+function toast(msg){
+  var el = $("toast");
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove("show"); }, 1900);
+}
+
+/* ============================================================
+   Wiring
+   ============================================================ */
+function init(){
+  state = load();
+  var savedTheme = "auto";
+  try{ savedTheme = localStorage.getItem(THEME_KEY) || "auto"; }catch(e){}
+  applyTheme(savedTheme);
+  detectEnv();
+  renderAll();
+  renderStorage();
+  save();
+
+  // If a bound file exists and is still authorised, it wins over localStorage.
+  restoreFile().then(function(){ renderAll(); renderStorage(); });
+
+  $("btnAdd").addEventListener("click", function(){ openBillModal(null); });
+  $("btnPeople").addEventListener("click", openPeopleModal);
+  $("btnExport").addEventListener("click", exportJSON);
+  $("btnImport").addEventListener("click", function(){ $("fileInput").click(); });
+  $("fileInput").addEventListener("change", function(e){
+    if(e.target.files && e.target.files[0]) importJSON(e.target.files[0]);
+    e.target.value = "";
+  });
+  $("btnTheme").addEventListener("click", function(){
+    var order = ["auto","light","dark"];
+    var cur = document.documentElement.getAttribute("data-theme") || "auto";
+    applyTheme(order[(order.indexOf(cur) + 1) % order.length]);
+  });
+
+  // Bill modal
+  $("billCancel").addEventListener("click", closeBillModal);
+  $("billSave").addEventListener("click", saveBill);
+  $("fSplitOn").addEventListener("change", function(){
+    if($("fSplitOn").checked && !$("splitRows").children.length) buildSplitRows(null);
+    syncSplitUI();
+  });
+  $("fAmount").addEventListener("input", function(){ syncSplitUI(); syncBillMonthField(); });
+  $("fPeriod").addEventListener("change", syncBillMonthField);
+  $("fBillMonth").addEventListener("change", syncBillMonthField);
+  $("modePct").addEventListener("click", function(){ setMode("percent"); });
+  $("modeAmt").addEventListener("click", function(){ setMode("amount"); });
+  $("btnEven").addEventListener("click", function(){
+    writeRows(evenSplit(state.people, currentTotal()));
+    syncSplitUI();
+  });
+  $("btnClearSplit").addEventListener("click", function(){
+    $("splitRows").querySelectorAll("input[data-pid]").forEach(function(i){ i.value = "0"; });
+    syncSplitUI();
+  });
+
+  // People modal
+  $("btnAddPerson").addEventListener("click", function(){
+    draftPeople.push({ id: uid("person"), name: "" });
+    renderPeopleRows();
+    var inputs = $("peopleRows").querySelectorAll("input");
+    if(inputs.length) inputs[inputs.length - 1].focus();
+  });
+  $("peopleCancel").addEventListener("click", function(){ $("peopleOverlay").classList.remove("open"); });
+  $("peopleSave").addEventListener("click", savePeople);
+
+  // Confirm modal
+  $("confirmNo").addEventListener("click", function(){
+    $("confirmOverlay").classList.remove("open"); confirmAction = null; $("confirmYes").textContent = "Delete";
+  });
+  $("confirmYes").addEventListener("click", function(){
+    if(confirmAction) confirmAction();
+    $("confirmOverlay").classList.remove("open"); confirmAction = null; $("confirmYes").textContent = "Delete";
+  });
+
+  // Card actions (delegated)
+  document.addEventListener("click", function(e){
+    var mk = e.target.closest && e.target.closest("[data-mark]");
+    if(mk){
+      var mb = state.bills.filter(function(x){ return x.id === mk.getAttribute("data-mark"); })[0];
+      if(mb){
+        mb.paidMonths[mk.getAttribute("data-ym")] = true;
+        save(); renderAll(); toast(mb.name + " marked paid");
+      }
+      return;
+    }
+    var ed = e.target.closest && e.target.closest("[data-edit]");
+    if(ed){ openBillModal(ed.getAttribute("data-edit")); return; }
+    var dl = e.target.closest && e.target.closest("[data-del]");
+    if(dl){
+      var id = dl.getAttribute("data-del");
+      var b = state.bills.filter(function(x){ return x.id === id; })[0];
+      if(!b) return;
+      askConfirm("Delete “" + b.name + "”?", "This removes the bill and its paid history. This cannot be undone.",
+        function(){
+          state.bills = state.bills.filter(function(x){ return x.id !== id; });
+          save(); renderAll(); toast("Deleted");
+        });
+    }
+  });
+
+  // Checklist: paid toggles + inline actuals (delegated)
+  $("checklist").addEventListener("change", function(e){
+    var el = e.target, ym = viewYm();
+    if(el.hasAttribute && el.hasAttribute("data-paid")){
+      var b = state.bills.filter(function(x){ return x.id === el.getAttribute("data-paid"); })[0];
+      if(!b) return;
+      if(el.checked) b.paidMonths[ym] = true; else delete b.paidMonths[ym];
+      save(); renderChecklist(); renderBills(); renderAlerts(); renderFunds();
+      return;
+    }
+    if(el.hasAttribute && el.hasAttribute("data-actual")){
+      setActual(el.getAttribute("data-actual"), ym, el.value);
+      defer(function(){ renderChecklist(); renderFunds(); renderAlerts(); });
+    }
+  });
+  // Enter in an actual field commits and moves on rather than submitting anything.
+  $("checklist").addEventListener("keydown", function(e){
+    if(e.key === "Enter" && e.target.hasAttribute && e.target.hasAttribute("data-actual")) e.target.blur();
+  });
+
+  // Month navigation
+  $("monthPrev").addEventListener("click", function(){ shiftMonth(-1); });
+  $("monthNext").addEventListener("click", function(){ shiftMonth(1); });
+  $("monthToday").addEventListener("click", function(){
+    viewMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    renderChecklist();
+  });
+
+  // Tabs
+  $("tabDash").addEventListener("click", function(){ setView("dash"); });
+  $("tabRep").addEventListener("click", function(){ setView("reports"); });
+
+  // Reports: year picker + editable month cells
+  $("yearSel").addEventListener("change", function(e){
+    reportYear = parseInt(e.target.value, 10);
+    renderReports();
+  });
+  $("billTable").addEventListener("change", function(e){
+    var el = e.target;
+    if(!el.hasAttribute || !el.hasAttribute("data-cell")) return;
+    setActual(el.getAttribute("data-cell"), el.getAttribute("data-ym"), el.value);
+    defer(function(){ renderReports(); renderChecklist(); renderAlerts(); renderFunds(); });
+  });
+  $("basisAccrual").addEventListener("click", function(){
+    state.settings.basis = "accrual"; save(); renderReports();
+  });
+  $("basisCash").addEventListener("click", function(){
+    state.settings.basis = "cash"; save(); renderReports();
+  });
+
+  // Set-aside: correcting a balance re-anchors the fund to this month.
+  $("funds").addEventListener("change", function(e){
+    var el = e.target;
+    if(!el.hasAttribute || !el.hasAttribute("data-fund")) return;
+    var b = state.bills.filter(function(x){ return x.id === el.getAttribute("data-fund"); })[0];
+    if(!b) return;
+    var v = parseFloat(el.value);
+    if(!isFinite(v)) { renderFunds(); return; }
+    setFundBalance(b, round2(v));
+    save();
+    defer(renderFunds);
+    toast(b.name + " balance set to " + money(v));
+  });
+  $("funds").addEventListener("keydown", function(e){
+    if(e.key === "Enter" && e.target.hasAttribute && e.target.hasAttribute("data-fund")) e.target.blur();
+  });
+
+  $("billTable").addEventListener("keydown", function(e){
+    if(e.key === "Enter" && e.target.hasAttribute && e.target.hasAttribute("data-cell")) e.target.blur();
+  });
+
+  // Overlay click-out + Escape
+  ["billOverlay","peopleOverlay","confirmOverlay"].forEach(function(oid){
+    $(oid).addEventListener("mousedown", function(e){
+      if(e.target === $(oid)) $(oid).classList.remove("open");
+    });
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape"){
+      document.querySelectorAll(".overlay.open").forEach(function(o){ o.classList.remove("open"); });
+    }
+    if(e.key === "Enter" && $("billOverlay").classList.contains("open")){
+      if(e.target && e.target.tagName === "INPUT" && !$("billSave").disabled) saveBill();
+    }
+  });
+
+  // Roll over at midnight so "past due", the month key and the daily
+  // notification stay honest on a tab that's been left open.
+  renderChecklist.lastDay = dayKey();
+  setInterval(function(){
+    if(dayKey() !== renderChecklist.lastDay){
+      renderChecklist.lastDay = dayKey();
+      renderAll();
+      fireNotification(false);
+    }
+  }, 60000);
+
+  fireNotification(false);
+
+  // Expose a little surface for debugging / automated checks.
+  window.BB = { get state(){ return state; }, contributions:contributions, splitSummary:splitSummary,
+                evenSplit:evenSplit, usesPercent:usesPercent, render:renderAll,
+                dueOccurrences:dueOccurrences, fireNotification:fireNotification,
+                reportData:reportData, setActual:setActual, setView:setView,
+                setYear:function(y){ reportYear = y; renderReports(); },
+                setMonth:function(y,m){ viewMonth = new Date(y, m, 1); renderChecklist(); },
+                fundStatus:fundStatus, fundBalance:fundBalance, billsInMonth:billsInMonth,
+                nowIdx:nowIdx, setFundBalance:setFundBalance };
+}
+
+if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+else init();
+})();
+</script>
+</body>
+</html>

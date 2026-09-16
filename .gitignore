@@ -1,0 +1,7 @@
+node_modules/
+*.log
+.DS_Store
+# personal data — never commit a real export
+*.json
+!package.json
+!package-lock.json
