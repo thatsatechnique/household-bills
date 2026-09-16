@@ -8,7 +8,7 @@ A bill tracker for two or more people who share a home, in a single HTML file.
 No build step, no server, no account, no dependencies, no telemetry. Open it in
 a browser and it works; bind it to a JSON file and your data is yours.
 
-**[Try it](https://YOUR-GITHUB-USER.github.io/household-bills/)** · it runs entirely in your browser, nothing is uploaded.
+**[Try it](https://thatsatechnique.github.io/household-bills/)** · it runs entirely in your browser, nothing is uploaded.
 
 ![Dashboard](docs/dashboard-light.png)
 
@@ -37,7 +37,7 @@ desktop notifications.
 Either use the hosted copy above, or keep it entirely local:
 
 ```
-git clone https://github.com/YOUR-GITHUB-USER/household-bills
+git clone https://github.com/thatsatechnique/household-bills
 cd household-bills
 open index.html        # macOS — or double-click it, or drag it into a browser
 ```
@@ -142,7 +142,7 @@ and restore, and the sandboxed-iframe and blocked-storage cases.
 
 The repo ships a GitHub Pages workflow. Enable Pages for the repository
 (Settings → Pages → Source: *GitHub Actions*), push to `main`, and the app is
-served from the repo root. Replace `YOUR-GITHUB-USER` in this README with your
+served from the repo root. Replace `thatsatechnique` in this README with your
 username.
 
 The app is one file on purpose. Keep it that way: inline CSS and JS, no
