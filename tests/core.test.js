@@ -219,6 +219,8 @@ run('core', async (t, browser) => {
   await page.waitForTimeout(200);
   t.ok('no horizontal overflow at 375px', (await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)) <= 1);
 
+  const manifest = await page.evaluate(() => JSON.parse(decodeURIComponent(document.querySelector('link[rel="manifest"]').href.split(',').slice(1).join(','))));
+  t.ok('manifest gains a start_url matching the page (Chrome install criterion)', manifest.start_url === page.url().split('#')[0] && /\/$/.test(manifest.scope) && manifest.icons.length === 2, JSON.stringify([manifest.start_url, manifest.scope]));
   t.ok('no console errors', errs.length === 0, errs.join(' | '));
   await ctx.close();
 });
