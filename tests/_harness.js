@@ -34,11 +34,23 @@ function clockScript(iso) {
 }
 
 // Serve index.html over http (file:// localStorage is not reliable across reloads in Chromium).
+// Servers are tracked so run() can close them even when a suite throws before
+// its own server.close() — otherwise the open socket keeps the process alive.
+const servers = new Set();
 function serve(port, host = '127.0.0.1', body) {
-  return http.createServer((req, res) => {
+  const s = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(body ? body() : fs.readFileSync(APP));
   }).listen(port, host);
+  servers.add(s);
+  s.on('close', () => servers.delete(s));
+  return s;
+}
+function closeServers() {
+  for (const s of [appServer, ...servers]) {
+    if (s.closeAllConnections) s.closeAllConnections();
+    if (s.listening) s.close();
+  }
 }
 
 class Suite {
@@ -112,12 +124,12 @@ async function run(name, body) {
     suite.ok('suite completed without throwing', false, e && e.message);
     console.error(e);
   } finally {
-    await browser.close();
-    appServer.close();
+    await browser.close().catch(() => {});
+    closeServers();
   }
   const failed = suite.report();
-  if (require.main === module.parent) process.exitCode = failed ? 1 : 0;
-  return failed;
+  // Exit explicitly: a stray timer or socket left by a failed suite must not hang the run.
+  process.exit(failed ? 1 : 0);
 }
 
 module.exports = { chromium, APP, appUrl, clockScript, serve, Suite, openPage, waitText, setInput, openSettings, closeSettings, run };

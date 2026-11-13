@@ -7,12 +7,15 @@ const path = require('path');
 
 const dir = __dirname;
 const files = fs.readdirSync(dir).filter(f => f.endsWith('.test.js')).sort();
+const SUITE_TIMEOUT_MS = 180000;
 let failed = 0;
 const summary = [];
 
 for (const f of files) {
-  const r = spawnSync(process.execPath, [path.join(dir, f)], { encoding: 'utf8' });
-  const out = (r.stdout || '') + (r.stderr || '');
+  // Backstop: a suite that hangs is killed and counted as failed instead of stalling the run.
+  const r = spawnSync(process.execPath, [path.join(dir, f)], { encoding: 'utf8', timeout: SUITE_TIMEOUT_MS, killSignal: 'SIGKILL' });
+  let out = (r.stdout || '') + (r.stderr || '');
+  if (r.error && r.error.code === 'ETIMEDOUT') out += `\n${f}: timed out after ${SUITE_TIMEOUT_MS / 1000}s, FAILURES: 1\n`;
   const m = out.match(/FAILURES: (\d+)/);
   const n = m ? parseInt(m[1], 10) : 1;
   failed += n;
