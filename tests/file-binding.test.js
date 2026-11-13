@@ -112,9 +112,53 @@ run('file-binding', async (t, browser) => {
     t.ok('app still works from localStorage', (await page.evaluate(() => BB.state.bills.length)) === 10);
     await setInput(page, '#checklist input[data-actual="electric"]', '99');
     t.ok('edits persist locally while stale', (await page.evaluate(() => JSON.parse(localStorage.getItem('householdBills.data')).bills.find(b => b.id === 'electric').actuals['2026-08'])) === 99);
+    t.ok('stale edit is flagged unsynced', (await page.evaluate(() => localStorage.getItem('householdBills.unsynced'))) === '1');
+    t.ok('file not written while stale', (await page.evaluate(() => JSON.parse(localStorage.getItem('__fd')).bills.find(b => b.id === 'electric').actuals['2026-08'])) !== 99);
+
+    // a reload while still stale must not lose the edit either
+    await page.reload();
+    await page.waitForSelector('#reconnectOverlay.open', { timeout: 2000 });
+    t.ok('stale edit survives reload', (await page.evaluate(() => BB.state.bills.find(b => b.id === 'electric').actuals['2026-08'])) === 99);
+    await page.click('#reconnectLater');
     await openSettings(page, 'data');
     await page.click('#stRecon');
     t.ok('reconnect restores bound state', /Saving to/.test(await waitText(page, '#storageChip', /Saving to/)));
+    await page.waitForTimeout(300);
+    t.ok('reconnect keeps edits made while stale', (await page.evaluate(() => BB.state.bills.find(b => b.id === 'electric').actuals['2026-08'])) === 99);
+    t.ok('reconnect pushes those edits to the file', (await page.evaluate(() => JSON.parse(localStorage.getItem('__fd')).bills.find(b => b.id === 'electric').actuals['2026-08'])) === 99);
+    t.ok('unsynced flag cleared', (await page.evaluate(() => localStorage.getItem('householdBills.unsynced'))) === null);
+    t.ok('file bills not lost on push', (await page.evaluate(() => JSON.parse(localStorage.getItem('__fd')).bills.some(b => b.id === 'fromfile'))));
+
+    // both sides changed: ask which to keep
+    const conflict = async (choice) => {
+      await page.evaluate(() => localStorage.setItem('__perm', 'prompt'));
+      await page.reload();
+      await page.waitForSelector('#reconnectOverlay.open', { timeout: 2000 });
+      await page.click('#reconnectLater');
+      await setInput(page, '#checklist input[data-actual="water"]', '61');
+      await page.evaluate(() => {
+        const f = JSON.parse(localStorage.getItem('__fd'));
+        f.bills.find(b => b.id === 'water').actuals['2026-08'] = 77;
+        localStorage.setItem('__fd', JSON.stringify(f));
+      });
+      await page.click('#storageMini');
+      await page.click('#reconnectYes');
+      await page.waitForSelector('#confirmOverlay.open', { timeout: 2000 });
+      t.ok('conflict asks which copy to keep (' + choice + ')', /Both copies changed/.test(await page.textContent('#confirmTitle')));
+      t.ok('still not saving while undecided (' + choice + ')', /needs permission/.test(await page.textContent('#storageMini')));
+      await page.click(choice === 'mine' ? '#confirmYes' : '#confirmNo');
+      await waitText(page, '#storageMini', /Saving to/);
+      await page.waitForTimeout(300);
+      return page.evaluate(() => ({
+        app: BB.state.bills.find(b => b.id === 'water').actuals['2026-08'],
+        file: JSON.parse(localStorage.getItem('__fd')).bills.find(b => b.id === 'water').actuals['2026-08'],
+      }));
+    };
+    const mine = await conflict('mine');
+    t.ok('Keep mine: browser version wins and is written', mine.app === 61 && mine.file === 61, JSON.stringify(mine));
+    const theirs = await conflict('file');
+    t.ok('Load the file: file version wins', theirs.app === 77 && theirs.file === 77, JSON.stringify(theirs));
+    await openSettings(page, 'data');
 
     // lapse again: header status reopens the dialog, and Reconnect there rebinds
     await closeSettings(page);

@@ -987,6 +987,24 @@ var fileName = "";
 var fileStatus = "none";        // none | bound | stale | unsupported
 var writeTimer = null, writing = false, writeAgain = false;
 
+// Sync bookkeeping, kept in localStorage so it survives reloads:
+//  - UNSYNCED_KEY is set when an edit lands while the bound file can't be
+//    written (permission lapsed, write failed), so a later reconnect knows the
+//    browser holds changes the file doesn't.
+//  - SYNCHASH_KEY is a hash of the file text we last wrote or read, so a
+//    reconnect can tell whether the file was also changed somewhere else.
+var UNSYNCED_KEY = "householdBills.unsynced";
+var SYNCHASH_KEY = "householdBills.fileHash";
+function textHash(t){
+  var h = 5381;
+  for(var i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0;
+  return t.length + ":" + (h >>> 0).toString(36);
+}
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k, v){ try{ v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); }catch(e){} }
+function markSynced(txt){ lsSet(SYNCHASH_KEY, textHash(txt)); lsSet(UNSYNCED_KEY, null); }
+function hasUnsynced(){ return lsGet(UNSYNCED_KEY) === "1"; }
+
 // A cross-origin frame (the artifact preview panel) may not open a file picker
 // at all, and its storage is often partitioned or blocked outright.
 function inFrame(){
@@ -1046,6 +1064,8 @@ function save(){
   if(fileHandle && fileStatus === "bound"){
     clearTimeout(writeTimer);
     writeTimer = setTimeout(writeFile, 400);
+  }else if(fileHandle){
+    lsSet(UNSYNCED_KEY, "1");
   }
 }
 
@@ -1053,14 +1073,17 @@ function writeFile(){
   if(!fileHandle) return;
   if(writing){ writeAgain = true; return; }
   writing = true;
+  var txt = JSON.stringify(state, null, 2);
   fileHandle.createWritable().then(function(w){
-    return w.write(JSON.stringify(state, null, 2)).then(function(){ return w.close(); });
+    return w.write(txt).then(function(){ return w.close(); });
   }).then(function(){
     writing = false;
+    markSynced(txt);
     if(writeAgain){ writeAgain = false; writeFile(); }
   }).catch(function(e){
     writing = false;
     console.warn("File write failed", e);
+    lsSet(UNSYNCED_KEY, "1");
     fileStatus = "stale"; renderStorage();
     toast("Couldn't write to " + fileName + " — data is still saved in this browser");
   });
@@ -1123,6 +1146,7 @@ function openExistingFile(){
         next.bills.length + " bill(s) from the file, and keeps saving there from now on.",
         function(){
           state = next;
+          markSynced(txt);
           bindFile(h, false).then(function(){
             try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
             renderAll(); toast("Loaded " + h.name);
@@ -1136,6 +1160,7 @@ function openExistingFile(){
 
 function disconnectFile(){
   fileHandle = null; fileName = ""; fileStatus = "none";
+  lsSet(UNSYNCED_KEY, null); lsSet(SYNCHASH_KEY, null);
   idbPut("datafile", null).catch(function(){});
   renderStorage();
   toast("Disconnected — saving to this browser only");
@@ -1159,20 +1184,42 @@ function restoreFile(){
     fileHandle = h; fileName = h.name;
     if(!h.queryPermission) { fileStatus = "stale"; return; }
     return h.queryPermission({ mode: "readwrite" }).then(function(p){
-      if(p === "granted"){ fileStatus = "bound"; return adoptFile(); }
+      if(p === "granted") return reconcileFile();
       fileStatus = "stale";
     });
   }).catch(function(e){ console.warn(e); });
 }
 
-// Pull the file's contents in as the source of truth.
-function adoptFile(){
-  if(!fileHandle) return Promise.resolve();
+// Permission is granted: decide which copy wins, then resume saving.
+//  - browser has no unsynced edits      -> the file wins (it may have been edited elsewhere)
+//  - unsynced edits, file untouched     -> the browser wins and is written to the file
+//  - unsynced edits, file changed too   -> ask; until answered we stay "stale" and write nothing
+// Resolves to "loaded" | "pushed" | "asked" | "failed".
+function reconcileFile(){
+  if(!fileHandle) return Promise.resolve("failed");
   return fileHandle.getFile().then(function(f){ return f.text(); }).then(function(txt){
-    if(!txt.trim()) { writeFile(); return; }
-    state = normalize(JSON.parse(txt));
-    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
-  }).catch(function(e){ console.warn("Could not read bound file", e); fileStatus = "stale"; });
+    if(!txt.trim()){ fileStatus = "bound"; writeFile(); return "pushed"; }
+    if(!hasUnsynced()){ takeFile(txt); return "loaded"; }
+    if(textHash(txt) === lsGet(SYNCHASH_KEY)){ fileStatus = "bound"; writeFile(); return "pushed"; }
+    fileStatus = "stale";
+    var next = normalize(JSON.parse(txt));
+    askConfirm("Both copies changed",
+      "You made changes here while " + fileName + " was disconnected, and the file was also changed somewhere else. " +
+      "Keep this browser's version (overwrites the file), or load the file's version (" +
+      next.bills.length + " bill(s)) and drop the changes made here.",
+      function(){ fileStatus = "bound"; writeFile(); renderAll(); renderStorage(); toast("Kept this browser's changes — saved to " + fileName); },
+      function(){ takeFile(txt); renderAll(); renderStorage(); toast("Loaded " + fileName); });
+    $("confirmYes").textContent = "Keep mine";
+    $("confirmYes").className = "primary";
+    $("confirmNo").textContent = "Load the file";
+    return "asked";
+  }).catch(function(e){ console.warn("Could not read bound file", e); fileStatus = "stale"; return "failed"; });
+}
+function takeFile(txt){
+  state = normalize(JSON.parse(txt));
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+  markSynced(txt);
+  fileStatus = "bound";
 }
 
 function openReconnect(){
@@ -1187,8 +1234,11 @@ function reconnectFile(){
     if(p !== "granted"){ toast("Access to " + fileName + " was declined"); return; }
     $("reconnectOverlay").classList.remove("open");
     if($("welcomeOverlay").classList.contains("open")){ markWelcomed(); $("welcomeOverlay").classList.remove("open"); }
-    fileStatus = "bound";
-    adoptFile().then(function(){ renderAll(); renderStorage(); toast("Reconnected to " + fileName); });
+    reconcileFile().then(function(r){
+      renderAll(); renderStorage();
+      if(r === "loaded") toast("Reconnected to " + fileName);
+      else if(r === "pushed") toast("Reconnected — your changes here were saved to " + fileName);
+    });
   }).catch(function(e){ console.warn(e); });
 }
 
@@ -1208,7 +1258,8 @@ function renderStorage(){
            '<button id="stRecon">Reconnect</button>';
     mini = esc(fileName) + ' needs permission';
     help = "The browser forgot its permission to write this file (it happens after a restart). " +
-           "Reconnect re-reads the file and resumes saving. Changes made meanwhile are kept in the browser.";
+           "Changes made meanwhile are kept in the browser and written to the file when you reconnect " +
+           "(if the file changed elsewhere too, you'll be asked which copy to keep).";
   }else if(fileStatus === "framed"){
     cls += " stale"; miniCls += " stale";
     el.title = "Preview panels run in a sandboxed frame: file pickers are blocked and " +
@@ -2295,10 +2346,14 @@ function savePeople(){
    Confirm dialog
    ============================================================ */
 var confirmAction = null;
-function askConfirm(title, body, onYes){
+var confirmNoAction = null;
+function askConfirm(title, body, onYes, onNo){
   $("confirmTitle").textContent = title;
   $("confirmBody").textContent = body;
   confirmAction = onYes;
+  confirmNoAction = onNo || null;
+  $("confirmYes").textContent = "Delete"; $("confirmYes").className = "danger";
+  $("confirmNo").textContent = "Cancel";
   $("confirmOverlay").classList.add("open");
 }
 
@@ -2522,7 +2577,7 @@ function init(){
   restoreFile().then(function(){
     renderAll(); renderStorage();
     if(fileStatus === "bound"){ markWelcomed(); $("welcomeOverlay").classList.remove("open"); }
-    else if(fileStatus === "stale") openReconnect();
+    else if(fileStatus === "stale" && !$("confirmOverlay").classList.contains("open")) openReconnect();
   });
 
   if(showWelcome) openWelcome();
@@ -2628,11 +2683,14 @@ function init(){
 
   // Confirm modal
   $("confirmNo").addEventListener("click", function(){
-    $("confirmOverlay").classList.remove("open"); confirmAction = null; $("confirmYes").textContent = "Delete";
+    var no = confirmNoAction;
+    $("confirmOverlay").classList.remove("open"); confirmAction = null; confirmNoAction = null;
+    if(no) no();
   });
   $("confirmYes").addEventListener("click", function(){
-    if(confirmAction) confirmAction();
-    $("confirmOverlay").classList.remove("open"); confirmAction = null; $("confirmYes").textContent = "Delete";
+    var yes = confirmAction;
+    $("confirmOverlay").classList.remove("open"); confirmAction = null; confirmNoAction = null;
+    if(yes) yes();
   });
 
   // Card actions (delegated)
