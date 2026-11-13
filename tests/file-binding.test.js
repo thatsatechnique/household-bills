@@ -104,12 +104,33 @@ run('file-binding', async (t, browser) => {
     const chip = await waitText(page, '#storageChip', /needs permission/);
     t.ok('chip flags missing permission', /needs permission/.test(chip), chip.replace(/\s+/g, ' ').trim());
     t.ok('header status flags it too', /needs permission/.test(await page.textContent('#storageMini')));
+    await page.waitForSelector('#reconnectOverlay.open', { timeout: 2000 });
+    t.ok('reconnect dialog opens on load', await page.isVisible('#reconnectYes'));
+    t.ok('dialog names the file', (await page.textContent('#reconnectName')) === 'household-bills.json');
+    await page.click('#reconnectLater');
+    t.ok('Not now closes the dialog', !(await page.isVisible('#reconnectOverlay')));
     t.ok('app still works from localStorage', (await page.evaluate(() => BB.state.bills.length)) === 10);
     await setInput(page, '#checklist input[data-actual="electric"]', '99');
     t.ok('edits persist locally while stale', (await page.evaluate(() => JSON.parse(localStorage.getItem('householdBills.data')).bills.find(b => b.id === 'electric').actuals['2026-08'])) === 99);
     await openSettings(page, 'data');
     await page.click('#stRecon');
     t.ok('reconnect restores bound state', /Saving to/.test(await waitText(page, '#storageChip', /Saving to/)));
+
+    // lapse again: header status reopens the dialog, and Reconnect there rebinds
+    await closeSettings(page);
+    await page.evaluate(() => localStorage.setItem('__perm', 'prompt'));
+    await page.reload();
+    await page.waitForSelector('#reconnectOverlay.open', { timeout: 2000 });
+    await page.click('#reconnectLater');
+    await page.click('#storageMini');
+    t.ok('header status reopens the dialog while stale', await page.isVisible('#reconnectOverlay.open'));
+    await page.click('#reconnectYes');
+    t.ok('dialog Reconnect rebinds', /Saving to/.test(await waitText(page, '#storageMini', /Saving to/)));
+    t.ok('dialog closes after reconnect', !(await page.isVisible('#reconnectOverlay')));
+    await page.reload();
+    await waitText(page, '#storageMini', /Saving to/);
+    t.ok('granted permission: no dialog on load', !(await page.isVisible('#reconnectOverlay.open')));
+    await openSettings(page, 'data');
 
     // disconnect
     await page.click('#stDisc');

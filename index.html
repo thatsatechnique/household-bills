@@ -680,6 +680,22 @@
   </div>
 </div>
 
+<!-- ============ Reconnect bound file (on load) ============ -->
+<div class="overlay" id="reconnectOverlay">
+  <div class="modal" style="max-width:440px" role="dialog" aria-modal="true" aria-labelledby="reconnectTitle">
+    <div class="modal-head"><h3 id="reconnectTitle">Reconnect your data file?</h3></div>
+    <div class="modal-body">
+      <p style="margin:0;font-size:14.5px">The browser needs your OK before it can save to <b id="reconnectName"></b> again.
+        Until you reconnect, changes stay in this browser only and don't reach the file.</p>
+      <p class="hint" style="margin:0">If Chrome offers <b>Allow on every visit</b>, pick it and this question goes away for good.</p>
+    </div>
+    <div class="modal-foot">
+      <button id="reconnectLater" class="ghost">Not now</button>
+      <button id="reconnectYes" class="primary">Reconnect</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1126,7 +1142,8 @@ function disconnectFile(){
 }
 
 // On load: if a handle was stored, Chrome usually needs a user gesture to
-// re-grant access, so we surface a Reconnect button rather than nagging.
+// re-grant access, so we open a Reconnect dialog straight away (see init) —
+// otherwise edits quietly land in localStorage only.
 function detectEnv(){
   if(!storageWorks()) fileStatus = "nostorage";
   else if(inFrame()) fileStatus = "framed";
@@ -1158,10 +1175,18 @@ function adoptFile(){
   }).catch(function(e){ console.warn("Could not read bound file", e); fileStatus = "stale"; });
 }
 
+function openReconnect(){
+  $("reconnectName").textContent = fileName;
+  $("reconnectOverlay").classList.add("open");
+  setTimeout(function(){ $("reconnectYes").focus(); }, 0);
+}
+
 function reconnectFile(){
   if(!fileHandle || !fileHandle.requestPermission) return;
   fileHandle.requestPermission({ mode: "readwrite" }).then(function(p){
     if(p !== "granted"){ toast("Access to " + fileName + " was declined"); return; }
+    $("reconnectOverlay").classList.remove("open");
+    if($("welcomeOverlay").classList.contains("open")){ markWelcomed(); $("welcomeOverlay").classList.remove("open"); }
     fileStatus = "bound";
     adoptFile().then(function(){ renderAll(); renderStorage(); toast("Reconnected to " + fileName); });
   }).catch(function(e){ console.warn(e); });
@@ -2497,6 +2522,7 @@ function init(){
   restoreFile().then(function(){
     renderAll(); renderStorage();
     if(fileStatus === "bound"){ markWelcomed(); $("welcomeOverlay").classList.remove("open"); }
+    else if(fileStatus === "stale") openReconnect();
   });
 
   if(showWelcome) openWelcome();
@@ -2515,7 +2541,14 @@ function init(){
       })
       .catch(function(){ toast("Could not fetch the file; use your browser's Save Page As instead"); });
   });
-  $("storageMini").addEventListener("click", function(){ openSettings("data"); });
+  $("storageMini").addEventListener("click", function(){
+    if(fileStatus === "stale") openReconnect(); else openSettings("data");
+  });
+  $("reconnectYes").addEventListener("click", reconnectFile);
+  $("reconnectLater").addEventListener("click", function(){
+    $("reconnectOverlay").classList.remove("open");
+    toast("Not saving to " + fileName + " — click the status in the header to reconnect");
+  });
   $("settingsClose").addEventListener("click", function(){ $("settingsOverlay").classList.remove("open"); });
   document.querySelectorAll(".settings-nav button").forEach(function(b){
     b.addEventListener("click", function(){ showSettingsSection(b.getAttribute("data-sec")); });
